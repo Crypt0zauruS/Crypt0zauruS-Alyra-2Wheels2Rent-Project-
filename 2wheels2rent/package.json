@@ -1,0 +1,51 @@
+{
+  "name": "2wheels2rent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@next/font": "13.1.6",
+    "@tensorflow-models/mobilenet": "^2.1.0",
+    "@tensorflow/tfjs": "^4.2.0",
+    "@types/node": "18.14.0",
+    "@types/react": "18.0.28",
+    "@types/react-dom": "18.0.11",
+    "@walletconnect/web3-provider": "^1.8.0",
+    "animate.css": "^4.1.1",
+    "axios": "^1.3.4",
+    "bootstrap": "^5.2.3",
+    "date-fns": "^2.29.3",
+    "date-fns-tz": "^2.0.0",
+    "eslint": "8.34.0",
+    "eslint-config-next": "13.1.6",
+    "ethers": "5.7.2",
+    "firebase": "^9.18.0",
+    "firebase-admin": "^11.5.0",
+    "geolib": "^3.3.3",
+    "isomorphic-dompurify": "^1.2.0",
+    "leaflet": "^1.9.3",
+    "next": "13.1.6",
+    "nprogress": "^0.2.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-easy-crop": "^4.7.4",
+    "react-hook-form": "^7.43.9",
+    "react-leaflet": "^4.2.1",
+    "react-select": "^5.7.1",
+    "react-toastify": "^9.1.1",
+    "sharp": "^0.31.3",
+    "typescript": "4.9.5",
+    "web3modal": "^1.9.12"
+  },
+  "devDependencies": {
+    "@next/bundle-analyzer": "^13.1.6",
+    "@types/bootstrap": "^5.2.6",
+    "@types/leaflet": "^1.9.3",
+    "@types/nprogress": "^0.2.0"
+  }
+}

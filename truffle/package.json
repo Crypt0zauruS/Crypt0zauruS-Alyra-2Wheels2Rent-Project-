@@ -1,0 +1,18 @@
+{
+  "name": "truffle-2wheels2rent-project",
+  "version": "1.0.0",
+  "description": "Truffle project 2wheels2rent contracts",
+  "scripts": {
+    "test": "npx truffle test"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.2",
+    "@truffle/hdwallet-provider": "^2.1.7",
+    "dotenv": "^16.0.3",
+    "eth-gas-reporter": "^0.2.25"
+  },
+  "devDependencies": {
+    "@openzeppelin/test-helpers": "^0.5.16"
+  }
+}
