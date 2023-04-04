@@ -38,8 +38,8 @@ const MyContract = ({
       if (activated) {
         const reward = await contract.getTotalRewards();
         setRewards(Number(ethers.utils.formatEther(reward)));
-        //const gps = await contract.gpsData(contract.address);
-        //console.log(gps);
+        const gps = await contract.gpsData(contract.address);
+        console.log(gps);
       }
       if (role === "loueur") {
         setMaxDuration((await contract.maximumRental()) / 86400);

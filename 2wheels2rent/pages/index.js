@@ -390,10 +390,7 @@ export default function Home() {
               )}
               {role && (
                 <>
-                  <div
-                    className="instructions text-center fs-5"
-                    style={{ marginTop: "370px" }}
-                  >
+                  <div className="instructions text-center fs-5">
                     <p>
                       Bien ! Vous désirez être{" "}
                       <strong style={{ color: "red" }}>{role}</strong> ! <br />
@@ -468,6 +465,7 @@ export default function Home() {
                     M&apos;inscrire !
                   </button>
                   <br />
+                  <Footer />
                 </>
               )}
             </div>
@@ -552,7 +550,7 @@ export default function Home() {
             )}
         </div>
       </div>
-      <Footer />
+
       <ToastContainer />
     </div>
   );

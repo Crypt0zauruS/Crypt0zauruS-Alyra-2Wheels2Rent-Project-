@@ -165,6 +165,7 @@ const CheckProposals = ({
         showToast(`Proposition annulée pour ${renter}`);
       });
       retrieveProposals();
+      setCheckProposals(false);
     } catch (error) {
       console.log(error);
       showToast("Erreur lors de l'annulation de la proposition", true);

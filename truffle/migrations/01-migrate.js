@@ -56,6 +56,58 @@ module.exports = async (deployer, network, accounts) => {
     );
     const MaticW2RdexInstance = await MaticW2Rdex.deployed();
 
+    // add DEX as authorized Minter and Burner in LP token
+    await MaticW2RPairTokenInstance.addMinterAndBurner(
+      MaticW2RdexInstance.address
+    );
+    console.log(
+      "MaticW2Rdex address set as authorized Minter and Burner in LP token"
+    );
+
+    // if Ganache, add liquidity to the DEX
+    if (network === "development") {
+      // Transfer 1,000 W2R tokens to the DEX
+      const transferMatic = web3.utils.toWei("100", "ether");
+      const transferW2R = web3.utils.toWei("1000", "ether");
+      // account[0] approve W2R transfer to DEX
+      await W2RInstance.approve(MaticW2RdexInstance.address, transferW2R, {
+        from: deployerAccount,
+      });
+      // account[0] launch addLiquidity function
+      await MaticW2RdexInstance.addLiquidity(transferW2R, {
+        from: deployerAccount,
+        value: transferMatic,
+      });
+      console.log("1,000 W2R tokens and 100 MATIC transferred to MaticW2Rdex");
+      // LP token Total supply
+      const LPtokenTotalSupply = await MaticW2RPairTokenInstance.totalSupply();
+      console.log(
+        "LP token total supply: ",
+        web3.utils.fromWei(LPtokenTotalSupply, "ether")
+      );
+      const dexW2RBalance = await W2RInstance.balanceOf(
+        MaticW2RdexInstance.address
+      );
+      console.log(
+        "MaticW2Rdex balance: ",
+        web3.utils.fromWei(dexW2RBalance, "ether")
+      );
+      const dexMaticBalance = await web3.eth.getBalance(
+        MaticW2RdexInstance.address
+      );
+      console.log(
+        "MaticW2Rdex balance: ",
+        web3.utils.fromWei(dexMaticBalance, "ether")
+      );
+      const deployerLPBalance = await MaticW2RPairTokenInstance.balanceOf(
+        deployerAccount
+      );
+      console.log(
+        "deployer LP balance: ",
+        web3.utils.fromWei(deployerLPBalance, "ether")
+      );
+    }
+
     // Deploy TwoWheels2RentLender NFT contract
     await deployer.deploy(TwoWheels2RentLender);
     const TwoWheels2RentLenderInstance = await TwoWheels2RentLender.deployed();

@@ -142,7 +142,7 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.17;\n\nimport \"@openzeppelin/contracts/interfaces/IERC721.sol\";\nimport \"./Utilities.sol\";\n\ninterface I4VaultW2R {\n    function distributeW2R(address receiver, uint256 amount) external;\n}\n\ninterface IlenderWhitelist {\n    struct Lender {\n        bool isWhitelisted;\n        address bikeShareContract;\n        uint NFTId;\n    }\n\n    function whitelistedAddresses(\n        address\n    ) external view returns (Lender memory);\n}\n\ninterface IBikeShare {\n    // to call the function setProposal of the BikeShare contract\n    function setProposal(\n        address _owner,\n        uint _dateMin,\n        uint _dateMax,\n        uint _rentalTime,\n        uint _rate,\n        uint depositAmount,\n        uint date,\n        string calldata _latitude,\n        string calldata _longitude\n    ) external;\n\n    // // to call the function returnBike of the BikeShare contract\n    function returnedBike(address _bikeRentOwner) external;\n\n    // to retrieve the maximum rental duration set in the BikeShare contract\n    function maximumRental() external view returns (uint);\n\n    // to retrieve the rate of W2R tokens per day set in the BikeShare contract\n    function rate() external view returns (uint);\n\n    // to retrieve the rate of W2R tokens per day set in the BikeShare contract for the deposit\n    function depositAmount() external view returns (uint);\n\n    function cancelledRenting(address _bikeRentOwner) external;\n\n    function getProposalsLength() external view returns (uint);\n}\n\ncontract BikeRent is Utilities {\n    using SafeERC20 for IERC20;\n    IBikeShare bikeShare;\n    address whitelistRenter;\n    address lenderNFT;\n    address whitelistLender;\n    bool public isRenting;\n\n    event ProposalMade(\n        address indexed renter, // address du contrat locataire\n        uint date, // date de la proposition\n        address indexed lender, // address du contrat propriétaire\n        uint rentalDateMin, // date de la location souhaitée\n        uint rentalDateMax, // date de la location souhaitée\n        uint rentalTime, // durée de la location souhaitée\n        uint rate, // taux de location au moment de la proposition\n        uint depositAmount, // taux de dépôt au moment de la proposition\n        string latitude,\n        string longitude\n    );\n\n    event RentalStarted(\n        address indexed renter,\n        uint date,\n        uint rentalTime,\n        uint rentalPrice,\n        uint deposit,\n        uint amountRequired,\n        bool _propalCancellation,\n        address indexed lender\n    );\n\n    event RentalCancelled(\n        address indexed lender,\n        uint date,\n        uint refund,\n        uint returnDate,\n        address indexed renter\n    );\n\n    event RentalDeclaredAsReturned(\n        address indexed lenter,\n        uint date,\n        address indexed renter,\n        string latitude,\n        string longitude\n    );\n    event RentalReturned(\n        uint rentalDate,\n        address indexed lender,\n        uint date,\n        address indexed renter,\n        string latitude,\n        string longitude\n    );\n\n    event BikeTaken(\n        address indexed lenter,\n        uint date,\n        address indexed renter,\n        string latitude,\n        string longitude\n    );\n\n    struct Rental {\n        uint date; // date de la location\n        uint rentalTime; // durée de la location\n        uint rentalPrice; // prix de la location\n        uint depositAmount; // montant du dépôt\n        uint rewardExpected; // montant de la récompense attendue\n        bool isReturned; // booléen pour savoir si le vélo a été rendu\n        bool isRefunded; // booléen pour savoir si la location a été remboursée\n        bool seemsReturned; // booléen pour savoir si le vélo est déclaré comme rendu\n        bool cantCancel; // booléen pour savoir si la location ne peut pas être annulée\n    }\n\n    struct ProposalsMade {\n        uint date; // time of the proposal\n        address lender; // address of the lender\n        uint rentalDateMin; // date of the rental, minimum hour of RDV\n        uint rentalDateMax; // date of the rental, maximum hour of RDV\n        uint rentalTime; // rental time proposed\n        uint rate; // rate of the rental\n        uint depositAmount; // deposit amount\n        bool isAccepted; // booléen pour savoir si la proposition a été acceptée\n    }\n\n    struct DailyCalls {\n        uint256 lastResetTimestamp;\n        uint256 dailyCallCount;\n    }\n    mapping(address => DailyCalls) private userProposalCalls;\n    mapping(address => DailyCalls) private userRentalCalls;\n    uint private constant DAY_SECONDS = 24 hours;\n    uint private constant DAILY_CALL_LIMIT = 2;\n\n    // import VaultW2R interface\n    I4VaultW2R private vaultW2R;\n\n    // instantiate IlenderWhitelist interface\n    IlenderWhitelist private LenderWhitelist;\n\n    ProposalsMade[] public proposalsMade;\n\n    // mapping of the address of the lender to an array of Rental structs (one for each rental)\n    // as a lender can have multiple rentals from a renter\n    mapping(address => Rental[]) public rentals;\n\n    address public currentLender;\n\n    constructor(\n        address _renter,\n        address _W2Rtoken,\n        address _lenderNFT,\n        address _whitelistRenter,\n        address _vaultW2R,\n        address _whitelistLender\n    ) Utilities(_renter, _W2Rtoken) {\n        require(_lenderNFT != address(0));\n        require(_whitelistRenter != address(0));\n        require(msg.sender == _whitelistRenter, \"Only whitelist can deploy\");\n        require(_vaultW2R != address(0));\n        require(_whitelistLender != address(0));\n        lenderNFT = _lenderNFT;\n        whitelistRenter = _whitelistRenter;\n        vaultW2R = I4VaultW2R(_vaultW2R);\n        whitelistLender = _whitelistLender;\n    }\n\n    // modifier to check if a bikeShare owner has really a Nft and if the bikeShare contract is whitelisted\n    modifier checkLenderNFT(address _bikeShareOwner) {\n        require(IERC721(lenderNFT).balanceOf(_bikeShareOwner) > 0, \"No NFT\");\n        LenderWhitelist = IlenderWhitelist(whitelistLender);\n        require(\n            LenderWhitelist.whitelistedAddresses(_bikeShareOwner).isWhitelisted,\n            \"Not whitelisted\"\n        );\n        // check if msg.sender corresponding to bikeshare contract in struct of whitelisted _bikeShareOwner\n        require(\n            LenderWhitelist\n                .whitelistedAddresses(_bikeShareOwner)\n                .bikeShareContract == msg.sender,\n            \"Not whitelisted\"\n        );\n        _;\n    }\n\n    modifier renting() {\n        require(isRenting, \"Not rented\");\n        require(currentLender != address(0), \"No lender\");\n        require(\n            bytes(gpsData[address(this)].latitude).length > 0 &&\n                bytes(gpsData[address(this)].longitude).length > 0,\n            \"GPS not set\"\n        );\n        _;\n    }\n\n    modifier rateLimited(mapping(address => DailyCalls) storage userAction) {\n        DailyCalls storage dailyCalls = userAction[msg.sender];\n        if (block.timestamp - dailyCalls.lastResetTimestamp >= DAY_SECONDS) {\n            dailyCalls.dailyCallCount = 0;\n            dailyCalls.lastResetTimestamp = block.timestamp;\n        }\n        require(dailyCalls.dailyCallCount < DAILY_CALL_LIMIT, \"Limit reached\");\n        dailyCalls.dailyCallCount++;\n        _;\n    }\n\n    function getRentalsByAdresses(address renter) external view returns (uint) {\n        return rentals[renter].length;\n    }\n\n    function deleteOldProposals() private returns (bool) {\n        uint i = 0;\n        while (i < proposalsMade.length) {\n            if (block.timestamp - proposalsMade[i].date > proposalDuration) {\n                for (uint j = i; j < proposalsMade.length - 1; j++) {\n                    address _bikeShareContract = proposalsMade[j].lender;\n                    uint date = proposalsMade[j].date;\n                    proposalsMade[j] = proposalsMade[j + 1];\n                    proposalsMade.pop();\n                    emit ProposalCancelled(\n                        address(this),\n                        date,\n                        _bikeShareContract\n                    );\n                }\n            } else {\n                i++;\n            }\n        }\n        return true;\n    }\n\n    // fonction pour que le locataire puisse proposer une location\n    function makeProposal(\n        address _bikeShareContract, // adresse du contrat BikeShare\n        uint _dateMin, // date de la location souhaitée, heure de RDV minimum\n        uint _dateMax, // date de la location souhaitée, heure de RDV maximum\n        uint _rentalTime // durée de la location\n    ) public isActivated onlyOwner rateLimited(userProposalCalls) {\n        require(deleteOldProposals(), \"No old proposals\");\n        for (uint i = 0; i < proposalsMade.length; i++) {\n            if (proposalsMade[i].lender == _bikeShareContract) {\n                revert(\"Proposal already made\");\n            }\n        }\n        require(\n            _rentalTime > 0 && _dateMin > 0 && _dateMax > 0,\n            \"Time too short\"\n        );\n        require(_dateMin > block.timestamp + 10000, \"Date too soon\");\n        require(_rentalTime >= minimalRental, \"Time too short\");\n        require(_bikeShareContract != address(0));\n        require(_dateMax - _dateMin >= 3 hours, \"Too short\");\n        require(_dateMax - _dateMin <= 12 hours, \"Too long\");\n        require(proposalsMade.length < 3, \"Only 3 proposals\");\n        require(\n            bytes(gpsData[address(this)].latitude).length > 0 &&\n                bytes(gpsData[address(this)].longitude).length > 0,\n            \"GPS not set\"\n        );\n        bikeShare = IBikeShare(_bikeShareContract);\n        require(bikeShare.getProposalsLength() < 5, \"Only 5 proposals\");\n        require(_rentalTime <= bikeShare.maximumRental(), \"Time too long\");\n        uint _rate = bikeShare.rate();\n        uint _depositAmount = bikeShare.depositAmount();\n        require(_rentalTime % 1 days == 0, \"Not multiple of 1 day\");\n        require(\n            W2R.balanceOf(address(this)) >=\n                _depositAmount + _rate * (_rentalTime / 1 days),\n            \"Not enough W2R\"\n        );\n        // call the setProposal function of the BikeShare contract\n        bikeShare.setProposal(\n            owner,\n            _dateMin, // date de la location souhaitée, heure de RDV minimum\n            _dateMax, // date de la location souhaitée, heure de RDV maximum\n            _rentalTime, // durée de la location souhaitée\n            _rate, // taux de location au moment de la proposition\n            _depositAmount, // taux du dépôt de garantie au moment de la proposition\n            block.timestamp, // date de la proposition\n            gpsData[address(this)].latitude,\n            gpsData[address(this)].longitude\n        );\n        // push the proposal to the proposalsMade array\n        proposalsMade.push(\n            ProposalsMade(\n                block.timestamp, // date of the proposal\n                _bikeShareContract, // address of the BikeShare contract\n                _dateMin, // date of the rental proposed, minimum hour\n                _dateMax, // date of the rental proposed, maximum hour\n                _rentalTime, // rental time proposed\n                _rate, // rate at the time of the proposal\n                _depositAmount, // depositAmount at the time of the proposal\n                false // isAccepted\n            )\n        );\n        emit ProposalMade(\n            address(this), // address of the renter contract\n            block.timestamp, // date of the proposal\n            _bikeShareContract, // address of the BikeShare contract\n            _dateMin, // date of the rental proposed, minimum hour\n            _dateMax, // date of the rental proposed, maximum hour\n            _rentalTime, // rental time proposed\n            _rate, // rate at the time of the proposal\n            _depositAmount,\n            gpsData[address(this)].latitude,\n            gpsData[address(this)].longitude\n        );\n    }\n\n    function getProposalsLength() external view returns (uint) {\n        return proposalsMade.length;\n    }\n\n    function getRentalsLength(address lender) external view returns (uint) {\n        return rentals[lender].length;\n    }\n\n    // fonction activée par le loueur lorsqu'il accepte une proposition de location\n    function rentBike(\n        address _bikeShareOwner,\n        uint _rentalPrice,\n        uint _depositAmount,\n        uint _rentalTime,\n        uint _rentalDate\n    )\n        external\n        isActivated\n        checkLenderNFT(_bikeShareOwner)\n        rateLimited(userRentalCalls)\n    {\n        require(isRenting == false, \"Already renting\");\n        require(currentLender == address(0), \"Not renting\");\n        require(msg.sender != address(0));\n        require(\n            bytes(gpsData[address(this)].latitude).length > 0 &&\n                bytes(gpsData[address(this)].longitude).length > 0,\n            \"GPS not set\"\n        );\n        uint _amountRequired = _rentalPrice + _depositAmount;\n        require(\n            W2R.balanceOf(address(this)) >= _amountRequired,\n            \"Insufficient W2R\"\n        );\n        bool proposalFound;\n        uint i;\n        uint dateMax;\n        uint rentalTime = _rentalTime;\n        for (i = 0; i < proposalsMade.length; i++) {\n            if (proposalsMade[i].lender == msg.sender) {\n                ProposalsMade memory proposal = proposalsMade[i];\n                require(\n                    block.timestamp - proposal.date <= proposalDuration,\n                    \"Proposal expired\"\n                );\n                require(proposal.isAccepted == false, \"Already accepted\");\n                require((_rentalPrice * rewardAmount * 100) >= 10000);\n                uint rentalPrice = _rentalPrice;\n                dateMax = proposal.rentalDateMax;\n                uint reward = (rentalPrice * rewardAmount * 100) / 10000;\n                proposal.isAccepted = true;\n                isRenting = true;\n                uint rentalDate = _rentalDate;\n                uint depositAmount = _depositAmount;\n                uint amountRequired = _amountRequired;\n                rentals[msg.sender].push(\n                    Rental(\n                        rentalDate,\n                        rentalTime,\n                        rentalPrice,\n                        depositAmount,\n                        reward,\n                        false,\n                        false,\n                        false,\n                        false\n                    )\n                );\n                currentLender = msg.sender;\n                totalRentals++;\n                W2R.safeTransfer(msg.sender, _amountRequired);\n                emit RentalStarted(\n                    msg.sender,\n                    proposal.date,\n                    proposal.rentalTime,\n                    rentalPrice,\n                    depositAmount,\n                    amountRequired,\n                    false,\n                    currentLender\n                );\n                proposalFound = true;\n                break;\n            }\n        }\n        require(proposalFound, \"No proposal found\");\n        // delete proposal from the renter as it has been accepted\n        while (i < proposalsMade.length) {\n            if (proposalsMade[i].lender == currentLender) {\n                require(proposalsMade[i].isAccepted == false, \"accepted\");\n                cancelUselessProposals(i);\n                break;\n            } else {\n                i++;\n            }\n        }\n        //delete proposal which date is before the rental date\n        for (uint j = 0; j < proposalsMade.length; j++) {\n            if (j != i && proposalsMade[j].date < (dateMax + rentalTime)) {\n                cancelUselessProposals(j);\n            }\n        }\n    }\n\n    function cancelUselessProposals(uint index) private returns (bool) {\n        address lender = proposalsMade[index].lender;\n        uint256 date = proposalsMade[index].date;\n        proposalsMade[index] = proposalsMade[proposalsMade.length - 1];\n        proposalsMade.pop();\n        emit ProposalCancelled(address(this), date, lender);\n        return true;\n    }\n\n    // function to cancel proposal made\n    function cancelProposal(\n        address _bikeShareContract\n    ) public isActivated onlyOwner {\n        require(_bikeShareContract != address(0));\n        require(proposalsMade.length > 0, \"No proposals\");\n        uint i = 0;\n        while (i < proposalsMade.length) {\n            if (proposalsMade[i].lender == _bikeShareContract) {\n                require(proposalsMade[i].isAccepted == false, \"accepted\");\n                cancelUselessProposals(i);\n                break;\n            } else {\n                i++;\n            }\n        }\n    }\n\n    // fonction pour confirmer la prise du vélo appelée par le BikeShare\n    function confirmBikeInHands(\n        address _bikeShareOwner\n    ) external isActivated checkLenderNFT(_bikeShareOwner) renting {\n        require(msg.sender == currentLender, \"Only lender\");\n        Rental storage rental = rentals[currentLender][\n            rentals[currentLender].length - 1\n        ];\n        require(rental.cantCancel == false, \"Already taken\");\n        rental.cantCancel = true;\n        emit BikeTaken(\n            currentLender,\n            block.timestamp,\n            address(this),\n            gpsData[address(this)].latitude,\n            gpsData[address(this)].longitude\n        );\n    }\n\n    // fonction pour confirmer le retour du vélo\n    // it is strongly advised that people were physically present at the meeting point\n    function returnBike() external isActivated renting onlyOwner {\n        Rental storage rental = rentals[currentLender][\n            rentals[currentLender].length - 1\n        ];\n        require(rental.cantCancel == true, \"Not taken\");\n        require(rental.seemsReturned == false, \"Already seems returned\");\n        require(rental.isReturned == false, \"Already returned\");\n        bikeShare = IBikeShare(currentLender);\n        bikeShare.returnedBike(owner);\n        rental.seemsReturned = true;\n        emit RentalDeclaredAsReturned(\n            currentLender,\n            block.timestamp,\n            address(this),\n            gpsData[address(this)].latitude,\n            gpsData[address(this)].longitude\n        );\n    }\n\n    // function called by Lender contract to definitely confirm the return of the bike\n    function returnConfirmed(\n        address _bikeShareOwner\n    ) external isActivated checkLenderNFT(_bikeShareOwner) renting {\n        require(msg.sender == currentLender, \"Only current lender\");\n        Rental storage rental = rentals[msg.sender][\n            rentals[msg.sender].length - 1\n        ];\n        require(rental.seemsReturned == true, \"Seems Not returned\");\n        require(rental.isReturned == false, \"Already returned\");\n        // set rental as returned\n        rental.isReturned = true;\n        uint reward = rental.rewardExpected;\n        // transfer reward from vault to this contract\n        vaultW2R.distributeW2R(address(this), reward);\n        // update rewards mapping\n        rewards[msg.sender] += reward;\n        // increase total rewards\n        totalRewards += reward;\n        isRenting = false;\n        currentLender = address(0);\n        emit RentalReturned(\n            rental.date,\n            msg.sender,\n            block.timestamp,\n            address(this),\n            gpsData[address(this)].latitude,\n            gpsData[address(this)].longitude\n        );\n    }\n\n    // function called by Lender contract to cancel the rental\n    function cancelledLending(\n        uint _refund,\n        address _bikeShareOwner,\n        bool _isCancelledByLender\n    ) external isActivated checkLenderNFT(_bikeShareOwner) renting {\n        handleRentalCancellation(\n            _refund,\n            _bikeShareOwner,\n            _isCancelledByLender\n        );\n    }\n\n    // function to cancel renting before renting began\n    function cancelRenting() external isActivated onlyOwner renting {\n        handleRentalCancellation(0, address(0), false);\n    }\n\n    // helper function to cancel renting\n    function handleRentalCancellation(\n        uint _refund,\n        address _bikeShareOwner,\n        bool _isCancelledByLender\n    ) private {\n        Rental storage rental = rentals[currentLender][\n            rentals[currentLender].length - 1\n        ];\n        require(rental.cantCancel == false, \"Cannot cancel\");\n        require(rental.isReturned == false, \"Already returned\");\n        if (_refund == 0) {\n            uint basis = rental.depositAmount + rental.rentalPrice;\n            _refund = block.timestamp >= rental.date - 2 hours\n                ? basis - (rental.rentalPrice * 1000) / 10000\n                : basis;\n        }\n        if (_bikeShareOwner != address(0)) {\n            require(msg.sender == currentLender, \"Only current lender\");\n        } else {\n            if (_isCancelledByLender == false) {\n                bikeShare = IBikeShare(currentLender);\n                bikeShare.cancelledRenting(owner);\n            }\n        }\n        // set rental as returned\n        rental.isReturned = true;\n        isRenting = false;\n        address lender = currentLender;\n        currentLender = address(0);\n        emit RentalCancelled(\n            lender,\n            rental.date,\n            _refund,\n            block.timestamp,\n            address(this)\n        );\n    }\n\n    function withdrawFunds(uint _amount) external isActivated onlyOwner {\n        require(_amount > 0, \"Not 0\");\n        require(W2R.balanceOf(address(this)) >= _amount, \"Insufficient W2R\");\n        W2R.safeTransfer(msg.sender, _amount);\n        emit W2Rwithdrawed(msg.sender, _amount, block.timestamp, address(this));\n    }\n\n    // function called by whitelist contract to destroy the contract\n    function destroy() external returns (bool) {\n        require(msg.sender == whitelistRenter, \"Only whitelistContract\");\n        // if is renting and rental duration is not over, revert\n        if (isRenting && currentLender != address(0)) {\n            Rental memory rental = rentals[currentLender][\n                rentals[currentLender].length - 1\n            ];\n            require(\n                block.timestamp > rental.date + rental.rentalTime,\n                \"Rental Not over\"\n            );\n        }\n        isDeactivated = true;\n        isDestroyed = true;\n        if (W2R.balanceOf(address(this)) > 0) {\n            // transfer all balance of W2R to owner\n            W2R.safeTransfer(owner, W2R.balanceOf(address(this)));\n        }\n        emit ContractDestroyed(msg.sender, block.timestamp, address(this));\n        return true;\n    }\n}\n",
-  "sourcePath": "/Users/harbinger/Dropbox/Dossier familial/Formation Blockchain/Alyra/Projet Certification/Application/truffle/contracts/BikeRent.sol",
+  "sourcePath": "/Users/harbinger/Dropbox/Dossier familial/Formation Blockchain/Alyra/Projet Certification/Projet Alyra 2Wheels2Rent/truffle/contracts/BikeRent.sol",
   "ast": {
     "absolutePath": "project:/contracts/BikeRent.sol",
     "exportedSymbols": {
@@ -177,7 +177,7 @@
         1274
       ],
       "Utilities": [
-        11944
+        11989
       ]
     },
     "id": 6067,
@@ -214,7 +214,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 6067,
-        "sourceUnit": 11945,
+        "sourceUnit": 11990,
         "src": "115:25:22",
         "symbolAliases": [],
         "unitAlias": ""
@@ -1165,7 +1165,7 @@
                 "1548:9:22"
               ],
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 11944,
+              "referencedDeclaration": 11989,
               "src": "1548:9:22"
             },
             "id": 4186,
@@ -1180,7 +1180,7 @@
         "id": 6066,
         "linearizedBaseContracts": [
           6066,
-          11944
+          11989
         ],
         "name": "BikeRent",
         "nameLocation": "1536:8:22",
@@ -4471,7 +4471,7 @@
                     "5330:9:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11944,
+                  "referencedDeclaration": 11989,
                   "src": "5330:9:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -5614,10 +5614,10 @@
                                       "name": "gpsData",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
-                                      "referencedDeclaration": 11711,
+                                      "referencedDeclaration": 11756,
                                       "src": "6711:7:22",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                                         "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                                       }
                                     },
@@ -5686,7 +5686,7 @@
                                     "nodeType": "IndexAccess",
                                     "src": "6711:22:22",
                                     "typeDescriptions": {
-                                      "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                                      "typeIdentifier": "t_struct$_GPS_$11751_storage",
                                       "typeString": "struct Utilities.GPS storage ref"
                                     }
                                   },
@@ -5698,7 +5698,7 @@
                                   "memberLocation": "6734:8:22",
                                   "memberName": "latitude",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 11703,
+                                  "referencedDeclaration": 11748,
                                   "src": "6711:31:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_string_storage",
@@ -5808,10 +5808,10 @@
                                       "name": "gpsData",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
-                                      "referencedDeclaration": 11711,
+                                      "referencedDeclaration": 11756,
                                       "src": "6780:7:22",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                                         "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                                       }
                                     },
@@ -5880,7 +5880,7 @@
                                     "nodeType": "IndexAccess",
                                     "src": "6780:22:22",
                                     "typeDescriptions": {
-                                      "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                                      "typeIdentifier": "t_struct$_GPS_$11751_storage",
                                       "typeString": "struct Utilities.GPS storage ref"
                                     }
                                   },
@@ -5892,7 +5892,7 @@
                                   "memberLocation": "6803:9:22",
                                   "memberName": "longitude",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 11705,
+                                  "referencedDeclaration": 11750,
                                   "src": "6780:32:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_string_storage",
@@ -7009,7 +7009,7 @@
                             "name": "proposalDuration",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11696,
+                            "referencedDeclaration": 11741,
                             "src": "7657:16:22",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
@@ -7538,7 +7538,7 @@
                                         "name": "ProposalCancelled",
                                         "nodeType": "Identifier",
                                         "overloadedDeclarations": [],
-                                        "referencedDeclaration": 11635,
+                                        "referencedDeclaration": 11680,
                                         "src": "8003:17:22",
                                         "typeDescriptions": {
                                           "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_address_$returns$__$",
@@ -8725,7 +8725,7 @@
                           "name": "minimalRental",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 11699,
+                          "referencedDeclaration": 11744,
                           "src": "9181:13:22",
                           "typeDescriptions": {
                             "typeIdentifier": "t_uint256",
@@ -9379,10 +9379,10 @@
                                       "name": "gpsData",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
-                                      "referencedDeclaration": 11711,
+                                      "referencedDeclaration": 11756,
                                       "src": "9488:7:22",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                                         "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                                       }
                                     },
@@ -9451,7 +9451,7 @@
                                     "nodeType": "IndexAccess",
                                     "src": "9488:22:22",
                                     "typeDescriptions": {
-                                      "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                                      "typeIdentifier": "t_struct$_GPS_$11751_storage",
                                       "typeString": "struct Utilities.GPS storage ref"
                                     }
                                   },
@@ -9463,7 +9463,7 @@
                                   "memberLocation": "9511:8:22",
                                   "memberName": "latitude",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 11703,
+                                  "referencedDeclaration": 11748,
                                   "src": "9488:31:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_string_storage",
@@ -9573,10 +9573,10 @@
                                       "name": "gpsData",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
-                                      "referencedDeclaration": 11711,
+                                      "referencedDeclaration": 11756,
                                       "src": "9557:7:22",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                                         "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                                       }
                                     },
@@ -9645,7 +9645,7 @@
                                     "nodeType": "IndexAccess",
                                     "src": "9557:22:22",
                                     "typeDescriptions": {
-                                      "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                                      "typeIdentifier": "t_struct$_GPS_$11751_storage",
                                       "typeString": "struct Utilities.GPS storage ref"
                                     }
                                   },
@@ -9657,7 +9657,7 @@
                                   "memberLocation": "9580:9:22",
                                   "memberName": "longitude",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 11705,
+                                  "referencedDeclaration": 11750,
                                   "src": "9557:32:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_string_storage",
@@ -10580,7 +10580,7 @@
                               "name": "W2R",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11690,
+                              "referencedDeclaration": 11735,
                               "src": "10035:3:22",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_contract$_IERC20_$888",
@@ -10819,7 +10819,7 @@
                         "name": "owner",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11685,
+                        "referencedDeclaration": 11730,
                         "src": "10282:5:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -10920,10 +10920,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "10727:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -10992,7 +10992,7 @@
                           "nodeType": "IndexAccess",
                           "src": "10727:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -11004,7 +11004,7 @@
                         "memberLocation": "10750:8:22",
                         "memberName": "latitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11703,
+                        "referencedDeclaration": 11748,
                         "src": "10727:31:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -11018,10 +11018,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "10772:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -11090,7 +11090,7 @@
                           "nodeType": "IndexAccess",
                           "src": "10772:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -11102,7 +11102,7 @@
                         "memberLocation": "10795:9:22",
                         "memberName": "longitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11705,
+                        "referencedDeclaration": 11750,
                         "src": "10772:32:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -11599,10 +11599,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "11937:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -11671,7 +11671,7 @@
                           "nodeType": "IndexAccess",
                           "src": "11937:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -11683,7 +11683,7 @@
                         "memberLocation": "11960:8:22",
                         "memberName": "latitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11703,
+                        "referencedDeclaration": 11748,
                         "src": "11937:31:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -11697,10 +11697,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "11982:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -11769,7 +11769,7 @@
                           "nodeType": "IndexAccess",
                           "src": "11982:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -11781,7 +11781,7 @@
                         "memberLocation": "12005:9:22",
                         "memberName": "longitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11705,
+                        "referencedDeclaration": 11750,
                         "src": "11982:32:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -11880,7 +11880,7 @@
                     "8652:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "8652:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -11896,7 +11896,7 @@
                     "8664:9:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "8664:9:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -12765,10 +12765,10 @@
                                       "name": "gpsData",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
-                                      "referencedDeclaration": 11711,
+                                      "referencedDeclaration": 11756,
                                       "src": "12834:7:22",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                                         "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                                       }
                                     },
@@ -12837,7 +12837,7 @@
                                     "nodeType": "IndexAccess",
                                     "src": "12834:22:22",
                                     "typeDescriptions": {
-                                      "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                                      "typeIdentifier": "t_struct$_GPS_$11751_storage",
                                       "typeString": "struct Utilities.GPS storage ref"
                                     }
                                   },
@@ -12849,7 +12849,7 @@
                                   "memberLocation": "12857:8:22",
                                   "memberName": "latitude",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 11703,
+                                  "referencedDeclaration": 11748,
                                   "src": "12834:31:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_string_storage",
@@ -12959,10 +12959,10 @@
                                       "name": "gpsData",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
-                                      "referencedDeclaration": 11711,
+                                      "referencedDeclaration": 11756,
                                       "src": "12903:7:22",
                                       "typeDescriptions": {
-                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                                        "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                                         "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                                       }
                                     },
@@ -13031,7 +13031,7 @@
                                     "nodeType": "IndexAccess",
                                     "src": "12903:22:22",
                                     "typeDescriptions": {
-                                      "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                                      "typeIdentifier": "t_struct$_GPS_$11751_storage",
                                       "typeString": "struct Utilities.GPS storage ref"
                                     }
                                   },
@@ -13043,7 +13043,7 @@
                                   "memberLocation": "12926:9:22",
                                   "memberName": "longitude",
                                   "nodeType": "MemberAccess",
-                                  "referencedDeclaration": 11705,
+                                  "referencedDeclaration": 11750,
                                   "src": "12903:32:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_string_storage",
@@ -13363,7 +13363,7 @@
                               "name": "W2R",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11690,
+                              "referencedDeclaration": 11735,
                               "src": "13077:3:22",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_contract$_IERC20_$888",
@@ -13933,7 +13933,7 @@
                                       "name": "proposalDuration",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
-                                      "referencedDeclaration": 11696,
+                                      "referencedDeclaration": 11741,
                                       "src": "13529:16:22",
                                       "typeDescriptions": {
                                         "typeIdentifier": "t_uint256",
@@ -14189,7 +14189,7 @@
                                               "name": "rewardAmount",
                                               "nodeType": "Identifier",
                                               "overloadedDeclarations": [],
-                                              "referencedDeclaration": 11693,
+                                              "referencedDeclaration": 11738,
                                               "src": "13720:12:22",
                                               "typeDescriptions": {
                                                 "typeIdentifier": "t_uint256",
@@ -14499,7 +14499,7 @@
                                           "name": "rewardAmount",
                                           "nodeType": "Identifier",
                                           "overloadedDeclarations": [],
-                                          "referencedDeclaration": 11693,
+                                          "referencedDeclaration": 11738,
                                           "src": "13895:12:22",
                                           "typeDescriptions": {
                                             "typeIdentifier": "t_uint256",
@@ -15198,7 +15198,7 @@
                                   "name": "totalRentals",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 11677,
+                                  "referencedDeclaration": 11722,
                                   "src": "14631:12:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_uint256",
@@ -15273,7 +15273,7 @@
                                     "name": "W2R",
                                     "nodeType": "Identifier",
                                     "overloadedDeclarations": [],
-                                    "referencedDeclaration": 11690,
+                                    "referencedDeclaration": 11735,
                                     "src": "14663:3:22",
                                     "typeDescriptions": {
                                       "typeIdentifier": "t_contract$_IERC20_$888",
@@ -16646,7 +16646,7 @@
                     "12544:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "12544:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -17355,7 +17355,7 @@
                       "name": "ProposalCancelled",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11635,
+                      "referencedDeclaration": 11680,
                       "src": "16115:17:22",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_address_$returns$__$",
@@ -18239,7 +18239,7 @@
                     "16308:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "16308:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -18255,7 +18255,7 @@
                     "16320:9:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "16320:9:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -18919,10 +18919,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "17382:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -18991,7 +18991,7 @@
                           "nodeType": "IndexAccess",
                           "src": "17382:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -19003,7 +19003,7 @@
                         "memberLocation": "17405:8:22",
                         "memberName": "latitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11703,
+                        "referencedDeclaration": 11748,
                         "src": "17382:31:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -19017,10 +19017,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "17427:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -19089,7 +19089,7 @@
                           "nodeType": "IndexAccess",
                           "src": "17427:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -19101,7 +19101,7 @@
                         "memberLocation": "17450:9:22",
                         "memberName": "longitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11705,
+                        "referencedDeclaration": 11750,
                         "src": "17427:32:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -19180,7 +19180,7 @@
                     "16939:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "16939:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -19941,7 +19941,7 @@
                         "name": "owner",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11685,
+                        "referencedDeclaration": 11730,
                         "src": "18069:5:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -20172,10 +20172,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "18248:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -20244,7 +20244,7 @@
                           "nodeType": "IndexAccess",
                           "src": "18248:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -20256,7 +20256,7 @@
                         "memberLocation": "18271:8:22",
                         "memberName": "latitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11703,
+                        "referencedDeclaration": 11748,
                         "src": "18248:31:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -20270,10 +20270,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "18293:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -20342,7 +20342,7 @@
                           "nodeType": "IndexAccess",
                           "src": "18293:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -20354,7 +20354,7 @@
                         "memberLocation": "18316:9:22",
                         "memberName": "longitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11705,
+                        "referencedDeclaration": 11750,
                         "src": "18293:32:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -20433,7 +20433,7 @@
                     "17650:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "17650:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -20465,7 +20465,7 @@
                     "17670:9:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "17670:9:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -21360,7 +21360,7 @@
                         "name": "rewards",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11681,
+                        "referencedDeclaration": 11726,
                         "src": "19137:7:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
@@ -21442,7 +21442,7 @@
                       "name": "totalRewards",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11683,
+                      "referencedDeclaration": 11728,
                       "src": "19210:12:22",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
@@ -21761,10 +21761,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "19443:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -21833,7 +21833,7 @@
                           "nodeType": "IndexAccess",
                           "src": "19443:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -21845,7 +21845,7 @@
                         "memberLocation": "19466:8:22",
                         "memberName": "latitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11703,
+                        "referencedDeclaration": 11748,
                         "src": "19443:31:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -21859,10 +21859,10 @@
                             "name": "gpsData",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11711,
+                            "referencedDeclaration": 11756,
                             "src": "19488:7:22",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11706_storage_$",
+                              "typeIdentifier": "t_mapping$_t_address_$_t_struct$_GPS_$11751_storage_$",
                               "typeString": "mapping(address => struct Utilities.GPS storage ref)"
                             }
                           },
@@ -21931,7 +21931,7 @@
                           "nodeType": "IndexAccess",
                           "src": "19488:22:22",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_struct$_GPS_$11706_storage",
+                            "typeIdentifier": "t_struct$_GPS_$11751_storage",
                             "typeString": "struct Utilities.GPS storage ref"
                           }
                         },
@@ -21943,7 +21943,7 @@
                         "memberLocation": "19511:9:22",
                         "memberName": "longitude",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 11705,
+                        "referencedDeclaration": 11750,
                         "src": "19488:32:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage",
@@ -22026,7 +22026,7 @@
                     "18508:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "18508:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -22238,7 +22238,7 @@
                     "19737:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "19737:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -22561,7 +22561,7 @@
                     "20019:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "20019:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -22577,7 +22577,7 @@
                     "20031:9:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "20031:9:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -23779,7 +23779,7 @@
                                     "name": "owner",
                                     "nodeType": "Identifier",
                                     "overloadedDeclarations": [],
-                                    "referencedDeclaration": 11685,
+                                    "referencedDeclaration": 11730,
                                     "src": "21077:5:22",
                                     "typeDescriptions": {
                                       "typeIdentifier": "t_address",
@@ -24737,7 +24737,7 @@
                               "name": "W2R",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11690,
+                              "referencedDeclaration": 11735,
                               "src": "21578:3:22",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_contract$_IERC20_$888",
@@ -24916,7 +24916,7 @@
                         "name": "W2R",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11690,
+                        "referencedDeclaration": 11735,
                         "src": "21648:3:22",
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_IERC20_$888",
@@ -25108,7 +25108,7 @@
                       "name": "W2Rwithdrawed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11655,
+                      "referencedDeclaration": 11700,
                       "src": "21700:13:22",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_uint256_$_t_address_$returns$__$",
@@ -25152,7 +25152,7 @@
                     "21499:11:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "21499:11:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -25168,7 +25168,7 @@
                     "21511:9:22"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "21511:9:22"
                 },
                 "nodeType": "ModifierInvocation",
@@ -25864,7 +25864,7 @@
                       "name": "isDeactivated",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11687,
+                      "referencedDeclaration": 11732,
                       "src": "22367:13:22",
                       "typeDescriptions": {
                         "typeIdentifier": "t_bool",
@@ -25911,7 +25911,7 @@
                       "name": "isDestroyed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11701,
+                      "referencedDeclaration": 11746,
                       "src": "22397:11:22",
                       "typeDescriptions": {
                         "typeIdentifier": "t_bool",
@@ -26029,7 +26029,7 @@
                           "name": "W2R",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 11690,
+                          "referencedDeclaration": 11735,
                           "src": "22429:3:22",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_IERC20_$888",
@@ -26107,7 +26107,7 @@
                               "name": "owner",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11685,
+                              "referencedDeclaration": 11730,
                               "src": "22546:5:22",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_address",
@@ -26186,7 +26186,7 @@
                                   "name": "W2R",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 11690,
+                                  "referencedDeclaration": 11735,
                                   "src": "22553:3:22",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_contract$_IERC20_$888",
@@ -26241,7 +26241,7 @@
                               "name": "W2R",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11690,
+                              "referencedDeclaration": 11735,
                               "src": "22529:3:22",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_contract$_IERC20_$888",
@@ -26420,7 +26420,7 @@
                       "name": "ContractDestroyed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11663,
+                      "referencedDeclaration": 11708,
                       "src": "22607:17:22",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_address_$returns$__$",
@@ -26539,7 +26539,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.12",
-  "updatedAt": "2023-04-03T15:47:56.687Z",
+  "updatedAt": "2023-04-04T21:15:41.974Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

@@ -15,10 +15,6 @@ interface IMaticW2RPairToken is IERC20 {
         address authorized
     ) external view returns (bool);
 
-    function addMinterAndBurner(address authorized) external;
-
-    function removeMinterAndBurner(address authorized) external;
-
     function mint(address to, uint amount) external;
 
     function burn(uint256 amount) external;
@@ -40,7 +36,9 @@ contract MaticW2Rdex is Ownable {
 
     I5VaultW2R vaultW2R;
 
+    // balance de LP Token sur les Wallets
     mapping(address => uint) public LPBalance;
+    // caractéristiques du farming
     mapping(address => Farming) public farming;
 
     struct Farming {
@@ -92,7 +90,7 @@ contract MaticW2Rdex is Ownable {
         W2R = IERC20(W2RAddress);
         lpToken = IMaticW2RPairToken(lpTokenAddress);
         swapRate = initialSwapRate;
-        rewardRatePerSecond = 10 ** 11; // 30% de la valeur initiale MATIC-W2R récompensée en W2R par an
+        rewardRatePerSecond = 10 ** 10; // 30% de la valeur initiale MATIC-W2R récompensée en W2R par an
         vaultW2R = I5VaultW2R(vaultW2RAddress);
         securityPercentage = 5;
         feesPercent = 1;
@@ -102,7 +100,7 @@ contract MaticW2Rdex is Ownable {
         require(lpAmount > 0, "LP amount must be greater than 0");
 
         require(
-            checkLPAllowance(msg.sender) >= lpAmount,
+            lpToken.allowance(msg.sender, address(this)) >= lpAmount,
             "You need to approve LP token first"
         );
         require(
@@ -124,36 +122,14 @@ contract MaticW2Rdex is Ownable {
         );
     }
 
-    function getUserBalances() external view returns (uint, uint, uint) {
-        return (
-            W2R.balanceOf(msg.sender),
-            msg.sender.balance,
-            lpToken.balanceOf(msg.sender)
-        );
+    function getUserBalances() external view returns (uint, uint) {
+        return (W2R.balanceOf(msg.sender), lpToken.balanceOf(msg.sender));
     }
 
     function checkIfAuthorizedInLPcontract(
         address _toCheck
     ) public view returns (bool) {
         return lpToken.checkMinterAndBurner(_toCheck);
-    }
-
-    function setAuthorizedInLPcontract(address _authorized) external onlyOwner {
-        lpToken.addMinterAndBurner(_authorized);
-    }
-
-    function removeAuthorizedInLPcontract(
-        address _authorized
-    ) external onlyOwner {
-        lpToken.removeMinterAndBurner(_authorized);
-    }
-
-    function checkW2Rallowance(address _W2Rowner) public view returns (uint) {
-        return W2R.allowance(_W2Rowner, address(this));
-    }
-
-    function checkLPAllowance(address _LPowner) public view returns (uint) {
-        return lpToken.allowance(_LPowner, address(this));
     }
 
     function swapMaticForW2R() external payable {
@@ -179,10 +155,10 @@ contract MaticW2Rdex is Ownable {
     function swapW2RForMatic(uint w2rAmount) external {
         bool guard;
         require(!guard, "ReentrancyGuard: reentrant call");
-        require(msg.sender.balance > 0, "MATIC balance must be greater than 0");
+        require(msg.sender.balance > 0, "for MATIC fees");
         require(w2rAmount > 0, "W2R amount must be greater than 0");
         require(
-            checkW2Rallowance(msg.sender) >= w2rAmount,
+            W2R.allowance(msg.sender, address(this)) >= w2rAmount,
             "You need to approve W2R first"
         );
         uint maticAmount = w2rAmount / swapRate;
@@ -215,7 +191,7 @@ contract MaticW2Rdex is Ownable {
         require(w2rAmount > 0, "W2R amount must be greater than 0");
         require(msg.value > 0, "MATIC amount must be greater than 0");
         require(
-            checkW2Rallowance(msg.sender) >= w2rAmount,
+            W2R.allowance(msg.sender, address(this)) >= w2rAmount,
             "You need to approve W2R first"
         );
         uint maticAmount = msg.value;
@@ -238,12 +214,10 @@ contract MaticW2Rdex is Ownable {
                 swapRate;
             lpAmount = (maticAmount * 1e18) / totalLiquidity;
             // prevent a user to have too much power on the contract
+            require((lpToken.totalSupply() * securityPercentage) >= 100);
             require(
-                (lpToken.totalSupply() * securityPercentage * 100) >= 10000
-            );
-            require(
-                lpAmount + LPBalance[msg.sender] <=
-                    (lpToken.totalSupply() * securityPercentage * 100) / 10000,
+                w2rAmount <=
+                    (totalW2RLiquidity * securityPercentage * 100) / 10000,
                 "You can't add more than the security % of the total LP supply"
             );
             totalMaticLiquidity += maticAmount;
@@ -275,7 +249,6 @@ contract MaticW2Rdex is Ownable {
         W2R.safeTransfer(msg.sender, w2rAmount);
         lpToken.transferFrom(msg.sender, address(this), lpAmount);
         lpToken.burn(lpAmount);
-        // Send MATIC funds using call instead of transfer
         guard = true;
         (bool success, ) = payable(msg.sender).call{value: maticAmount}("");
         guard = false;
@@ -287,28 +260,40 @@ contract MaticW2Rdex is Ownable {
         // check if user has already farmed
         LPBalance[msg.sender] -= lpAmount;
         // update farming struct
-        farming[msg.sender].lpAmount += lpAmount;
+        Farming storage user = farming[msg.sender];
+        user.lpAmount += lpAmount;
+        user.lastTime = block.timestamp;
         lpToken.safeTransferFrom(msg.sender, address(this), lpAmount);
-        farming[msg.sender].lastTime = block.timestamp;
         emit Farm(msg.sender, lpAmount, block.timestamp);
     }
 
     function exitFarm() external {
+        require(msg.sender != address(0), "Invalid address");
         uint lpBalance = farming[msg.sender].lpAmount;
         require(lpBalance > 0, "No LP tokens to claim rewards");
         harvest();
-        farming[msg.sender].lpAmount -= lpBalance;
+        Farming storage user = farming[msg.sender];
+        user.lpAmount -= lpBalance;
         LPBalance[msg.sender] += lpBalance;
         lpToken.safeTransfer(msg.sender, lpBalance);
         emit ExitFarm(msg.sender, lpBalance, block.timestamp);
     }
 
-    function calculateReward(address user) private returns (uint) {
-        require(user != address(0), "Invalid address");
+    function viewRewards() external view returns (uint) {
+        require(msg.sender != address(0), "Invalid address");
         uint lpBalance = farming[msg.sender].lpAmount;
-        uint timeElapsed = block.timestamp - farming[user].lastTime;
-        uint basis = lpBalance * timeElapsed * rewardRatePerSecond;
-        require((basis * feesPercent * 100) >= 10000);
+        uint lastTime = farming[msg.sender].lastTime;
+        uint timeElapsed = block.timestamp - lastTime;
+        uint reward = (lpBalance * timeElapsed * rewardRatePerSecond) /
+            10 ** 18;
+        return reward;
+    }
+
+    function calculateReward() private returns (uint) {
+        uint lpBalance = farming[msg.sender].lpAmount;
+        uint timeElapsed = block.timestamp - farming[msg.sender].lastTime;
+        uint basis = (lpBalance * timeElapsed * rewardRatePerSecond) / 10 ** 18;
+        require((basis * feesPercent * 100) >= 10000, "Fees are too high");
         uint fees = (basis * feesPercent * 100) / 10000;
         uint reward = basis - fees;
         totalW2RFees += fees;
@@ -316,13 +301,14 @@ contract MaticW2Rdex is Ownable {
     }
 
     function harvest() public {
+        require(msg.sender != address(0), "Invalid address");
         uint lpBalance = farming[msg.sender].lpAmount;
         require(lpBalance > 0, "No LP tokens to claim rewards");
-        uint reward = calculateReward(msg.sender);
+        uint reward = calculateReward();
         require(reward > 0, "No rewards available");
-        // distribute rewards from vault to user
+        Farming storage user = farming[msg.sender];
+        user.lastTime = block.timestamp;
         vaultW2R.distributeW2R(msg.sender, reward);
-        farming[msg.sender].lastTime = block.timestamp;
         emit Harvest(msg.sender, reward, block.timestamp);
     }
 
@@ -347,14 +333,21 @@ contract MaticW2Rdex is Ownable {
     }
 
     function withdrawFees() external onlyOwner {
+        require(msg.sender != address(0), "Invalid address");
+        bool guard; // even if it's the owner, we don't want reentrancy !
+        require(!guard, "ReentrancyGuard: reentrant call");
         if (totalW2RFees > 0) {
-            vaultW2R.distributeW2R(msg.sender, totalW2RFees);
+            uint w2rToSend = totalW2RFees;
             totalW2RFees = 0;
+            vaultW2R.distributeW2R(msg.sender, w2rToSend);
         }
-        require(totalMaticFees > 0, "No fees to withdraw");
-        totalMaticFees = 0;
-        (bool success, ) = payable(msg.sender).call{value: totalMaticFees}("");
-        require(success, "Failed to withdraw fees");
+        if (totalMaticFees > 0) {
+            uint amount = totalMaticFees;
+            totalMaticFees = 0;
+            (bool success, ) = payable(msg.sender).call{value: amount}("");
+            guard = true;
+            require(success, "Failed to withdraw fees");
+        }
     }
 
     receive() external payable {}

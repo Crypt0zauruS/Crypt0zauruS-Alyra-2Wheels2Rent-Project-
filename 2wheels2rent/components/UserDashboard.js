@@ -14,6 +14,7 @@ import BikeShare from "../contracts/BikeShare.json";
 import BikeRent from "../contracts/BikeRent.json";
 import RenterRentals from "./RenterRentals";
 import LenderRentals from "./LenderRentals";
+import Footer from "./Footer";
 
 const NearbyUsersMap = dynamic(() => import("../components/NearbyUsersMap"), {
   ssr: false,
@@ -56,7 +57,6 @@ const UserDashboard = ({ props }) => {
   const [lenderRentals, setLenderRentals] = useState(false);
   const [renterRentals, setRenterRentals] = useState(false);
   const [proposalAddress, setProposalAddress] = useState("");
-  const [newCoords, setNewCoords] = useState();
   const [activated, setActivated] = useState(false);
   const [userInfos, setUserInfos] = useState({
     contractAddress: "",
@@ -205,7 +205,7 @@ const UserDashboard = ({ props }) => {
     if (!w2Rcontract) return;
     try {
       const balance = await w2Rcontract.balanceOf(address);
-      setW2rUserBalance(ethers.utils.formatEther(balance));
+      setW2rUserBalance(Number(ethers.utils.formatEther(balance)).toFixed(2));
     } catch (error) {
       console.log(error);
     }
@@ -303,10 +303,14 @@ const UserDashboard = ({ props }) => {
     }
   };
 
-  const handleCheckActivated = async () => {
-    setActivated(!(await contract?.isDeactivated()));
-  };
+  useEffect(() => {
+    const handleCheckActivated = async () => {
+      setActivated(!(await contract?.isDeactivated()));
+    };
+    handleCheckActivated();
+  }, [contract]);
 
+  console.log("activated", activated);
   useEffect(() => {
     getNearbyUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -324,7 +328,7 @@ const UserDashboard = ({ props }) => {
       );
       getW2Rbalance();
       getWhitelistedInfos();
-      handleCheckActivated();
+      //handleCheckActivated();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -341,7 +345,7 @@ const UserDashboard = ({ props }) => {
         <>
           <div className="instructions text-center fs-5">
             {!updateGPS ? (
-              <div>
+              <div className="instructions2" style={{ marginTop: "-800px" }}>
                 <h2 className="text-center fs-4">
                   Bienvenue {name} ! <br />
                   W2R sur votre wallet:{" "}
@@ -361,7 +365,7 @@ const UserDashboard = ({ props }) => {
                 </p>{" "}
               </div>
             ) : (
-              <div>
+              <div className="instructions2" style={{ marginTop: "-800px" }}>
                 <p>
                   Aprés vous être localisé en appuyant sur le bouton "Me
                   localiser" (marqueur{" "}
@@ -516,6 +520,7 @@ const UserDashboard = ({ props }) => {
           showToast={showToast}
         />
       )}
+      <Footer />
     </div>
   );
 };

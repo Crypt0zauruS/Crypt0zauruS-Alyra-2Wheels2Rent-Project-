@@ -47,7 +47,7 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.17;\n/////////////////////////////////// BikeShare contract ///////////////////////////////////\n\nimport \"@openzeppelin/contracts/interfaces/IERC721.sol\";\nimport \"./Utilities.sol\";\n\ninterface I3VaultW2R {\n    function distributeW2R(address receiver, uint256 amount) external;\n}\n\ninterface IrenterWhitelist {\n    struct Renter {\n        bool isWhitelisted;\n        address bikeRentContract;\n        uint NFTId;\n    }\n\n    function whitelistedAddresses(\n        address\n    ) external view returns (Renter memory);\n}\n\ninterface IBikeRent {\n    function rentBike(\n        address _bikeShareContract,\n        uint _rentalPrice,\n        uint _depositAmount,\n        uint _rentalTime,\n        uint _rentalDate\n    ) external;\n\n    function cancelledLending(\n        uint _refund,\n        address _bikeShareOwner,\n        bool _isCancelledByLender\n    ) external;\n\n    function returnConfirmed(address _bikeShareOwner) external;\n\n    function confirmBikeInHands(address _bikeShareOwner) external;\n}\n\ncontract BikeShare is Utilities {\n    using SafeERC20 for IERC20;\n    address whitelistLender;\n    address renterNFT;\n    address whitelistRenter;\n    uint public rate; // Prix de location par jour\n    uint public depositAmount; // Montant de la caution\n    uint public maximumRental; // Durée maximale de location, PEUT ETRE RENSEIGNÉE\n    bool public isRented; // Vélo loué ou non\n\n    event BikeRented(\n        address indexed renter,\n        uint rentalTime,\n        uint rentalDate,\n        uint rate,\n        uint deposit,\n        uint rentalPrice\n    );\n\n    event BikeReturned(\n        uint rentalDate,\n        address indexed renter,\n        uint depositReturned,\n        uint returnDate,\n        address indexed lender,\n        string latitude,\n        string longitude\n    );\n\n    event RentingCancelled(\n        address indexed renter,\n        uint date,\n        uint depositReturned,\n        uint returnDate,\n        address indexed lender\n    );\n\n    event ProposalReceived(\n        address indexed renter, // address du contrat locataire\n        uint date, // date de la proposition\n        address indexed lender, // address du contrat propriétaire\n        uint rentalDateMin, // date de la location souhaitée\n        uint rentalDateMax, // date de la location souhaitée\n        uint rentalTime, // durée de la location souhaitée\n        uint rate, // taux de location au moment de la proposition\n        uint depositAmount, // taux de dépôt au moment de la proposition\n        string latitude,\n        string longitude\n    );\n\n    event BikeTaken(\n        address indexed renter,\n        uint date,\n        address indexed lender,\n        string latitude,\n        string longitude\n    );\n\n    event RentalSeemsReturned(\n        address indexed renter,\n        uint date,\n        address indexed lender\n    );\n\n    struct Proposal {\n        // time of the proposal\n        uint date; // date de la proposition\n        address _renter; // address of the renter\n        uint _rentalDateMin; // date de la location, heure de RDV minimum\n        uint _rentalDateMax; // date de la location, heure de RDV maximum\n        uint _rentalTime; // durée de la location\n        uint _rate; // prix de la location par jour\n        uint _depositAmount; // montant de la caution\n        bool _isAccepted; // proposition acceptée ou non\n    }\n\n    Proposal[] public proposals;\n\n    struct Rental {\n        uint date; // date de la location\n        uint rentalTime; // durée de la location\n        uint rentalPrice; // prix de la location\n        uint depositAmount; // montant de la caution\n        uint rewardExpected; // récompense\n        uint amountAsked; // montant demandé\n        bool isAccepted; // location acceptée ou non\n        bool isRefunded; // montant remboursé ou non\n        bool seemsReturned; // location déclarée rendue ou non\n        bool cantCancel; // impossible de cancel la location\n        bool isReturned; // location rendue ou non\n    }\n\n    // import VaultW2R interface\n    I3VaultW2R private vaultW2R;\n\n    IBikeRent bikeRent;\n\n    // instantiate IrenterWhitelist interface\n    IrenterWhitelist private RenterWhitelist;\n\n    struct RentalGPS {\n        string latitude;\n        string longitude;\n    }\n\n    mapping(address => RentalGPS) public rentalGPSData;\n\n    // mapping of rentals, address of the renter is the key\n    mapping(address => Rental[]) public rentals;\n    address public currentRenter;\n\n    constructor(\n        address _lender,\n        address _W2Rtoken,\n        address _renterNFT,\n        address _whitelistLender,\n        address _vaultW2R,\n        address _whitelistRenter\n    ) Utilities(_lender, _W2Rtoken) {\n        require(_renterNFT != address(0));\n        require(\n            msg.sender == _whitelistLender,\n            \"Only the whitelist can deploy\"\n        );\n        require(_vaultW2R != address(0));\n        require(_whitelistRenter != address(0));\n        renterNFT = _renterNFT;\n        whitelistLender = _whitelistLender;\n        vaultW2R = I3VaultW2R(_vaultW2R);\n        whitelistRenter = _whitelistRenter;\n        // default values\n        maximumRental = 1 days;\n        rate = 100000000000000000000; // 100 W2R\n        depositAmount = 200000000000000000000; // 200 W2R\n    }\n\n    // modifier to check if a renter has the NFT\n    modifier checkRenterNFT(address _bikeRentOwner) {\n        require(IERC721(renterNFT).balanceOf(_bikeRentOwner) > 0, \"No NFT\");\n        RenterWhitelist = IrenterWhitelist(whitelistRenter);\n        require(\n            RenterWhitelist.whitelistedAddresses(_bikeRentOwner).isWhitelisted,\n            \"Not whitelisted\"\n        );\n        require(\n            RenterWhitelist\n                .whitelistedAddresses(_bikeRentOwner)\n                .bikeRentContract == msg.sender,\n            \"Not whitelisted\"\n        );\n        _;\n    }\n\n    modifier lending() {\n        require(isRented, \"Not rented\");\n        require(currentRenter != address(0), \"No lender\");\n        require(\n            bytes(rentalGPSData[currentRenter].latitude).length > 0 &&\n                bytes(rentalGPSData[currentRenter].longitude).length > 0,\n            \"GPS not set\"\n        );\n        _;\n    }\n\n    function setRate(uint _rate) external onlyOwner {\n        require(_rate > 0);\n        rate = _rate;\n    }\n\n    // fonction pour fixer le taux de la caution\n    function setDepositAmount(\n        uint _depositAmount\n    ) external isActivated onlyOwner {\n        require(_depositAmount > 0, \"Must not 0\");\n        depositAmount = _depositAmount;\n    }\n\n    // fonction pour fixer la durée maximale de location\n    function setMaximumRental(\n        uint _maximumRental\n    ) external isActivated onlyOwner {\n        require(_maximumRental >= 1 days && _maximumRental <= 1 weeks);\n        maximumRental = _maximumRental;\n    }\n\n    function getRentalsByAdresses(address renter) external view returns (uint) {\n        return rentals[renter].length;\n    }\n\n    // fonction pour renseigner les détails de la location\n    function setRentalStruct(\n        uint _date, // date de la location\n        address _renter, // address du contrat locataire\n        uint _rentalTime, // durée de la location\n        uint _rentalPrice, // prix de la location\n        uint _depositAmount // montant de la caution\n    ) private isActivated {\n        require((_rentalPrice * rewardAmount * 100) >= 10000);\n        uint reward = (_rentalPrice * rewardAmount * 100) / 10000;\n        uint _amountAsked = _rentalPrice + _depositAmount;\n        rentals[_renter].push(\n            Rental(\n                _date,\n                _rentalTime,\n                _rentalPrice,\n                _depositAmount,\n                reward,\n                _amountAsked,\n                true,\n                false,\n                false,\n                false,\n                false\n            )\n        );\n    }\n\n    // fonction pour proposer une location appelée par le contrat locataire\n    function setProposal(\n        address _bikeRentOwner,\n        uint _dateMin, // date de la location souhaitée, heure de RDV minimum\n        uint _dateMax, // date de la location souhaitée, heure de RDV maximum\n        uint _rentalTime, // durée de la location proposée\n        uint _rate, // taux de la location au moment de la proposition\n        uint _depositAmount, // caution au moment de la proposition\n        uint date,\n        string calldata _latitude,\n        string calldata _longitude\n    ) external isActivated checkRenterNFT(_bikeRentOwner) {\n        require(deleteOldProposals(), \"not deleted\");\n        for (uint i = 0; i < proposals.length; i++) {\n            if (proposals[i]._renter == msg.sender) {\n                revert(\"Already proposed\");\n            }\n        }\n        require(proposals.length <= 5, \"Too many\");\n        // check rentalTime is modulo 1 days\n        require(\n            _rentalTime % 1 days == 0 && _rentalTime >= 1 days,\n            \"Bad rental time\"\n        );\n        require(\n            _dateMin > block.timestamp + 2 hours &&\n                _dateMax - _dateMin <= 12 hours,\n            \"Bad dates\"\n        );\n        require(\n            _rentalTime >= minimalRental && _rentalTime <= maximumRental,\n            \"Too short\"\n        );\n        require(_rate > 0);\n        require(depositAmount > 0);\n        require(\n            bytes(_latitude).length > 0 && bytes(_longitude).length > 0,\n            \"GPS not set\"\n        );\n\n        Proposal memory proposal = Proposal(\n            date, // date de réception de la proposition\n            msg.sender, // address du contrat renter\n            _dateMin, // date de la location souhaitée, heure de RDV minimum\n            _dateMax, // date de la location souhaitée, heure de RDV maximum\n            _rentalTime, // durée de la location souhaitée\n            _rate, // taux de la location au moment de la proposition\n            _depositAmount, // taux de la caution au moment de la proposition\n            false // proposition acceptée ou non\n        );\n        proposals.push(proposal);\n        emit ProposalReceived(\n            msg.sender, // address du contrat locataire\n            date, // date de la proposition\n            address(this), // address du contrat propriétaire\n            _dateMin, // date de la location souhaitée\n            _dateMax, // date de la location souhaitée\n            _rentalTime, // durée de la location souhaitée\n            _rate, // taux de location au moment de la proposition\n            _depositAmount, // taux de dépôt au moment de la proposition\n            _latitude,\n            _longitude\n        );\n    }\n\n    function getProposalsLength() external view returns (uint) {\n        return proposals.length;\n    }\n\n    function getRentalsLength(address renter) external view returns (uint) {\n        return rentals[renter].length;\n    }\n\n    function deleteOldProposals() private returns (bool) {\n        uint i = 0;\n        while (i < proposals.length) {\n            if (block.timestamp - proposals[i].date > proposalDuration) {\n                for (uint j = i; j < proposals.length - 1; j++) {\n                    address renter = proposals[j]._renter;\n                    uint date = proposals[j].date;\n                    proposals[j] = proposals[j + 1];\n                    proposals.pop();\n                    emit ProposalCancelled(renter, date, address(this));\n                }\n            } else {\n                i++;\n            }\n        }\n        return true;\n    }\n\n    // inform bikeRent contract that the proposal has been accepted\n    // GPS coordinates come from front-end\n    function acceptProposal(\n        address _bikeRent,\n        uint _meetingHour,\n        string calldata _latitude,\n        string calldata _longitude\n    ) external isActivated onlyOwner {\n        require(!isRented, \"Already rented\");\n        require(_meetingHour > 0);\n        require(_bikeRent != address(0));\n        require(proposals.length > 0, \"No proposals\");\n        require(\n            bytes(_latitude).length > 0 && bytes(_longitude).length > 0,\n            \"GPS not set\"\n        );\n        bool proposalFound;\n        uint i;\n        uint dateMax;\n        uint rentalTime;\n        for (i = 0; i < proposals.length; i++) {\n            if (proposals[i]._renter == _bikeRent) {\n                Proposal memory proposalLoop = proposals[i];\n                uint rentalPrice = (proposalLoop._rentalTime / 86400) *\n                    proposalLoop._rate;\n                dateMax = proposalLoop._rentalDateMax;\n                rentalTime = proposalLoop._rentalTime;\n                bikeRent = IBikeRent(proposalLoop._renter);\n                // check W2R balance of renter contract\n                require(\n                    W2R.balanceOf(proposalLoop._renter) >=\n                        rentalPrice + proposalLoop._depositAmount,\n                    \"Not enough W2R\"\n                );\n                uint meetingHour = _meetingHour;\n                setRentalStruct(\n                    meetingHour, // date et heure de la location\n                    proposalLoop._renter, // address du contrat locataire\n                    rentalTime, // durée de la location\n                    rentalPrice, // prix de la location\n                    proposalLoop._depositAmount // montant de la caution\n                );\n                bikeRent.rentBike(\n                    owner, // address du propriétaire\n                    rentalPrice, // prix de la location\n                    proposalLoop._depositAmount, // montant de la caution\n                    rentalTime, // durée de la location\n                    meetingHour // date de la location\n                );\n                // set bike as rented if no revert\n                proposalLoop._isAccepted = true;\n                isRented = true;\n                currentRenter = proposalLoop._renter;\n                rentalGPSData[currentRenter] = RentalGPS(_latitude, _longitude);\n                totalRentals++;\n                emit BikeRented(\n                    proposalLoop._renter, // address du contrat locataire\n                    rentalTime, // durée de la location\n                    _meetingHour, // date de la location\n                    proposalLoop._rate, // taux de la location\n                    proposalLoop._depositAmount, // montant de la caution\n                    rentalPrice // prix de la location\n                );\n                proposalFound = true;\n                break;\n            }\n        }\n        require(proposalFound, \"not found\");\n        // delete proposal from the renter as it has been accepted\n        while (i < proposals.length) {\n            if (proposals[i]._renter == currentRenter) {\n                cancelUselessProposals(i);\n                break;\n            } else {\n                i++;\n            }\n        }\n        //delete proposal which date is before the rental date\n        for (uint j = 0; j < proposals.length; j++) {\n            if (j != i && proposals[j].date < (dateMax + rentalTime)) {\n                cancelUselessProposals(j);\n            }\n        }\n    }\n\n    function cancelUselessProposals(uint index) private returns (bool) {\n        address renter = proposals[index]._renter;\n        uint256 date = proposals[index].date;\n        proposals[index] = proposals[proposals.length - 1];\n        proposals.pop();\n        emit ProposalCancelled(renter, date, address(this));\n        return true;\n    }\n\n    function cancelProposal(address _bikerent) public isActivated onlyOwner {\n        require(_bikerent != address(0));\n        require(proposals.length > 0, \"No proposals\");\n        uint i = 0;\n        while (i < proposals.length) {\n            if (proposals[i]._renter == _bikerent) {\n                require(proposals[i]._isAccepted == false, \"accepted\");\n                cancelUselessProposals(i);\n                break;\n            } else {\n                i++;\n            }\n        }\n    }\n\n    // function to activate when the Renter has physically taken the bike\n    function confirmBikeTaken() external isActivated onlyOwner lending {\n        Rental storage rental = rentals[currentRenter][\n            rentals[currentRenter].length - 1\n        ];\n        // deactivated for testing\n        //require(rental.date <= block.timestamp, \"Must be in the past\");\n        require(rental.cantCancel == false, \"already taken\");\n        rental.cantCancel = true;\n        bikeRent = IBikeRent(currentRenter);\n        bikeRent.confirmBikeInHands(owner);\n        emit BikeTaken(\n            currentRenter,\n            block.timestamp,\n            address(this),\n            rentalGPSData[currentRenter].latitude,\n            rentalGPSData[currentRenter].longitude\n        );\n    }\n\n    // function called by Renter contract to confirm that the bike has been returned\n    // it is strongly advised that people were physically present at the meeting point\n    function returnedBike(\n        address _bikeRentOwner\n    ) external isActivated checkRenterNFT(_bikeRentOwner) lending {\n        require(msg.sender == currentRenter, \"current renter\");\n        Rental storage rental = rentals[currentRenter][\n            rentals[currentRenter].length - 1\n        ];\n        require(rental.seemsReturned == false, \"seems returned\");\n        rental.seemsReturned = true;\n        emit RentalSeemsReturned(msg.sender, block.timestamp, address(this));\n    }\n\n    // function to definitely confirm bike returned by renter and return deposit to renter\n    function confirmBikeReturned() external isActivated onlyOwner lending {\n        Rental storage rental = rentals[currentRenter][\n            rentals[currentRenter].length - 1\n        ];\n        require(rental.seemsReturned == true, \"Seems not returned\");\n        // check if rental is not already returned\n        require(rental.isReturned == false, \"Already returned\");\n        uint depositReturned = rental.depositAmount;\n        require(\n            W2R.balanceOf(address(this)) >= depositReturned,\n            \"Insufficient W2R\"\n        );\n        bikeRent = IBikeRent(currentRenter);\n        bikeRent.returnConfirmed(owner);\n        // set rental as returned\n        rental.isReturned = true;\n        uint reward = rental.rewardExpected;\n        rewards[currentRenter] += reward;\n        // update totalRewards\n        totalRewards += reward;\n        isRented = false;\n        address current = currentRenter;\n        currentRenter = address(0);\n        W2R.safeTransfer(current, depositReturned);\n        vaultW2R.distributeW2R(address(this), reward);\n        emit BikeReturned(\n            rental.date,\n            current,\n            depositReturned,\n            block.timestamp,\n            address(this),\n            rentalGPSData[currentRenter].latitude,\n            rentalGPSData[currentRenter].longitude\n        );\n    }\n\n    // function called by lender to cancel lending\n    function cancelLending() external isActivated lending onlyOwner {\n        handleRentingCancellation(false);\n    }\n\n    // function called by renter to cancel renting\n    function cancelledRenting(\n        address _bikeRentOwner\n    ) external isActivated checkRenterNFT(_bikeRentOwner) lending {\n        handleRentingCancellation(true);\n    }\n\n    // helper function to handle cancellation\n    function handleRentingCancellation(bool isCalledByRenter) private {\n        Rental storage rental = rentals[currentRenter][\n            rentals[currentRenter].length - 1\n        ];\n        require(rental.cantCancel == false, \"Cannot cancel\");\n        require(rental.isRefunded == false, \"Already refunded\");\n        uint _refund;\n        uint basis = rental.depositAmount + rental.rentalPrice;\n        if (isCalledByRenter == true) {\n            require(msg.sender == currentRenter, \"Only renter\");\n        }\n        _refund = isCalledByRenter &&\n            msg.sender == currentRenter &&\n            block.timestamp >= rental.date - 2 hours\n            ? basis - (rental.rentalPrice * 1000) / 10000\n            : basis;\n        require(W2R.balanceOf(address(this)) >= _refund, \"Insufficient W2R\");\n        if (isCalledByRenter == false) {\n            bikeRent = IBikeRent(currentRenter);\n            bikeRent.cancelledLending(_refund, owner, true);\n        }\n        // set rental struct to refunded\n        rental.isRefunded = true;\n        // set bike as not rented if no revert\n        isRented = false;\n        address current = currentRenter;\n        currentRenter = address(0);\n        W2R.safeTransfer(current, _refund);\n        emit RentingCancelled(\n            current,\n            rental.date,\n            _refund,\n            block.timestamp,\n            address(this)\n        );\n    }\n\n    function withdrawFunds(uint _amount) external isActivated onlyOwner {\n        require(_amount > 0, \"Must be greater than 0\");\n        uint W2Rbalance = W2R.balanceOf(address(this));\n        uint deposit;\n        if (isRented && currentRenter != address(0)) {\n            deposit = rentals[currentRenter][rentals[currentRenter].length - 1]\n                .depositAmount;\n        }\n        require(W2Rbalance - deposit > _amount, \"Not enough\");\n        //transfer W2R to owner\n        W2R.safeTransfer(owner, _amount);\n        emit W2Rwithdrawed(msg.sender, _amount, block.timestamp, address(this));\n    }\n\n    // Fonction pour détruire le contrat et renvoyer les fonds restants à l'owner\n    function destroy() external returns (bool) {\n        require(msg.sender == whitelistLender, \"Only whitelistContract\");\n        // if bike is rented and rental duration is not over, revert\n        if (isRented && currentRenter != address(0)) {\n            Rental memory rental = rentals[currentRenter][\n                rentals[currentRenter].length - 1\n            ];\n            require(\n                block.timestamp > rental.date + rental.rentalTime,\n                \"Rental not over\"\n            );\n        }\n        isDeactivated = true;\n        isDestroyed = true;\n        if (W2R.balanceOf(address(this)) > 0) {\n            // transfer all balance of W2R to owner\n            W2R.safeTransfer(owner, W2R.balanceOf(address(this)));\n        }\n        emit ContractDestroyed(msg.sender, block.timestamp, address(this));\n        return true;\n    }\n}\n",
-  "sourcePath": "/Users/harbinger/Dropbox/Dossier familial/Formation Blockchain/Alyra/Projet Certification/Application/truffle/contracts/BikeShare.sol",
+  "sourcePath": "/Users/harbinger/Dropbox/Dossier familial/Formation Blockchain/Alyra/Projet Certification/Projet Alyra 2Wheels2Rent/truffle/contracts/BikeShare.sol",
   "ast": {
     "absolutePath": "project:/contracts/BikeShare.sol",
     "exportedSymbols": {
@@ -82,7 +82,7 @@
         1274
       ],
       "Utilities": [
-        11944
+        11989
       ]
     },
     "id": 7930,
@@ -119,7 +119,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 7930,
-        "sourceUnit": 11945,
+        "sourceUnit": 11990,
         "src": "206:25:23",
         "symbolAliases": [],
         "unitAlias": ""
@@ -852,7 +852,7 @@
                 "1066:9:23"
               ],
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 11944,
+              "referencedDeclaration": 11989,
               "src": "1066:9:23"
             },
             "id": 6129,
@@ -867,7 +867,7 @@
         "id": 7929,
         "linearizedBaseContracts": [
           7929,
-          11944
+          11989
         ],
         "name": "BikeShare",
         "nameLocation": "1053:9:23",
@@ -4071,7 +4071,7 @@
                     "4695:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11944,
+                  "referencedDeclaration": 11989,
                   "src": "4695:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -5736,7 +5736,7 @@
                     "6281:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "6281:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -5969,7 +5969,7 @@
                     "6473:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "6473:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -5985,7 +5985,7 @@
                     "6485:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "6485:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -6264,7 +6264,7 @@
                     "6727:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "6727:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -6280,7 +6280,7 @@
                     "6739:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "6739:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -6545,7 +6545,7 @@
                                   "name": "rewardAmount",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 11693,
+                                  "referencedDeclaration": 11738,
                                   "src": "7401:12:23",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_uint256",
@@ -6747,7 +6747,7 @@
                               "name": "rewardAmount",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11693,
+                              "referencedDeclaration": 11738,
                               "src": "7470:12:23",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_uint256",
@@ -7231,7 +7231,7 @@
                     "7355:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "7355:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -8454,7 +8454,7 @@
                             "name": "minimalRental",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11699,
+                            "referencedDeclaration": 11744,
                             "src": "9210:13:23",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
@@ -9627,7 +9627,7 @@
                     "8519:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "8519:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -10355,7 +10355,7 @@
                             "name": "proposalDuration",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 11696,
+                            "referencedDeclaration": 11741,
                             "src": "11073:16:23",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
@@ -10884,7 +10884,7 @@
                                         "name": "ProposalCancelled",
                                         "nodeType": "Identifier",
                                         "overloadedDeclarations": [],
-                                        "referencedDeclaration": 11635,
+                                        "referencedDeclaration": 11680,
                                         "src": "11384:17:23",
                                         "typeDescriptions": {
                                           "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_address_$returns$__$",
@@ -12739,7 +12739,7 @@
                                           "name": "W2R",
                                           "nodeType": "Identifier",
                                           "overloadedDeclarations": [],
-                                          "referencedDeclaration": 11690,
+                                          "referencedDeclaration": 11735,
                                           "src": "12789:3:23",
                                           "typeDescriptions": {
                                             "typeIdentifier": "t_contract$_IERC20_$888",
@@ -13112,7 +13112,7 @@
                                     "name": "owner",
                                     "nodeType": "Identifier",
                                     "overloadedDeclarations": [],
-                                    "referencedDeclaration": 11685,
+                                    "referencedDeclaration": 11730,
                                     "src": "13432:5:23",
                                     "typeDescriptions": {
                                       "typeIdentifier": "t_address",
@@ -13560,7 +13560,7 @@
                                   "name": "totalRentals",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 11677,
+                                  "referencedDeclaration": 11722,
                                   "src": "14012:12:23",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_uint256",
@@ -14720,7 +14720,7 @@
                     "11823:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "11823:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -14736,7 +14736,7 @@
                     "11835:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "11835:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -15358,7 +15358,7 @@
                       "name": "ProposalCancelled",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11635,
+                      "referencedDeclaration": 11680,
                       "src": "15416:17:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_address_$returns$__$",
@@ -16242,7 +16242,7 @@
                     "15546:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "15546:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -16258,7 +16258,7 @@
                     "15558:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "15558:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -16782,7 +16782,7 @@
                         "name": "owner",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11685,
+                        "referencedDeclaration": 11730,
                         "src": "16536:5:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -17121,7 +17121,7 @@
                     "16105:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "16105:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -17137,7 +17137,7 @@
                     "16117:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "16117:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -17860,7 +17860,7 @@
                     "17016:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "17016:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -18556,7 +18556,7 @@
                               "name": "W2R",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11690,
+                              "referencedDeclaration": 11735,
                               "src": "17981:3:23",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_contract$_IERC20_$888",
@@ -18764,7 +18764,7 @@
                         "name": "owner",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11685,
+                        "referencedDeclaration": 11730,
                         "src": "18150:5:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -18967,7 +18967,7 @@
                         "name": "rewards",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11681,
+                        "referencedDeclaration": 11726,
                         "src": "18279:7:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
@@ -19034,7 +19034,7 @@
                       "name": "totalRewards",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11683,
+                      "referencedDeclaration": 11728,
                       "src": "18352:12:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
@@ -19298,7 +19298,7 @@
                         "name": "W2R",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11690,
+                        "referencedDeclaration": 11735,
                         "src": "18487:3:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_IERC20_$888",
@@ -19796,7 +19796,7 @@
                     "17569:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "17569:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -19812,7 +19812,7 @@
                     "17581:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "17581:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -19937,7 +19937,7 @@
                     "18953:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "18953:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -19969,7 +19969,7 @@
                     "18973:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "18973:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -20078,7 +20078,7 @@
                     "19162:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "19162:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -21448,7 +21448,7 @@
                               "name": "W2R",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11690,
+                              "referencedDeclaration": 11735,
                               "src": "20051:3:23",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_contract$_IERC20_$888",
@@ -21723,7 +21723,7 @@
                               "name": "owner",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11685,
+                              "referencedDeclaration": 11730,
                               "src": "20250:5:23",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_address",
@@ -22108,7 +22108,7 @@
                         "name": "W2R",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11690,
+                        "referencedDeclaration": 11735,
                         "src": "20507:3:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_IERC20_$888",
@@ -22622,7 +22622,7 @@
                         "name": "W2R",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11690,
+                        "referencedDeclaration": 11735,
                         "src": "20870:3:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_IERC20_$888",
@@ -23161,7 +23161,7 @@
                         "name": "owner",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11685,
+                        "referencedDeclaration": 11730,
                         "src": "21219:5:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -23197,7 +23197,7 @@
                         "name": "W2R",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 11690,
+                        "referencedDeclaration": 11735,
                         "src": "21202:3:23",
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_IERC20_$888",
@@ -23389,7 +23389,7 @@
                       "name": "W2Rwithdrawed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11655,
+                      "referencedDeclaration": 11700,
                       "src": "21249:13:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_uint256_$_t_address_$returns$__$",
@@ -23433,7 +23433,7 @@
                     "20764:11:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11598,
+                  "referencedDeclaration": 11643,
                   "src": "20764:11:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -23449,7 +23449,7 @@
                     "20776:9:23"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 11588,
+                  "referencedDeclaration": 11633,
                   "src": "20776:9:23"
                 },
                 "nodeType": "ModifierInvocation",
@@ -24145,7 +24145,7 @@
                       "name": "isDeactivated",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11687,
+                      "referencedDeclaration": 11732,
                       "src": "21934:13:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_bool",
@@ -24192,7 +24192,7 @@
                       "name": "isDestroyed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11701,
+                      "referencedDeclaration": 11746,
                       "src": "21964:11:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_bool",
@@ -24310,7 +24310,7 @@
                           "name": "W2R",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 11690,
+                          "referencedDeclaration": 11735,
                           "src": "21996:3:23",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_IERC20_$888",
@@ -24388,7 +24388,7 @@
                               "name": "owner",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11685,
+                              "referencedDeclaration": 11730,
                               "src": "22113:5:23",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_address",
@@ -24467,7 +24467,7 @@
                                   "name": "W2R",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 11690,
+                                  "referencedDeclaration": 11735,
                                   "src": "22120:3:23",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_contract$_IERC20_$888",
@@ -24522,7 +24522,7 @@
                               "name": "W2R",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 11690,
+                              "referencedDeclaration": 11735,
                               "src": "22096:3:23",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_contract$_IERC20_$888",
@@ -24701,7 +24701,7 @@
                       "name": "ContractDestroyed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 11663,
+                      "referencedDeclaration": 11708,
                       "src": "22174:17:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_address_$returns$__$",
@@ -24820,7 +24820,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.12",
-  "updatedAt": "2023-04-03T15:47:56.815Z",
+  "updatedAt": "2023-04-04T21:15:42.018Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},
