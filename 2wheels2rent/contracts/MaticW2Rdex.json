@@ -30999,12 +30999,237 @@
         }
       },
       "links": {},
-      "address": "0x88baacf2670ac9856534925a28DA2645a4c0F915",
-      "transactionHash": "0x7608fafc45868b4f0d62affff4e220baf6b3104a4fbc0a68b002efa3b2e14f3d"
+      "address": "0x1fBB5D29fC46A8D8086c25D39a8969a2EF3b23A4",
+      "transactionHash": "0xc28d47cd44690002f04ca1c945326134094471dc68020bd422cb6fb846079100"
+    },
+    "80001": {
+      "events": {
+        "0xbeb3885786d637a474cbc287c0a44587231633a077f0bd30354d5a4b18996fce": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "maticAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "w2rAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lpAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "AddLiquidity",
+          "type": "event"
+        },
+        "0x9c17b9b1252c31bf8727169baa67751ad5869f505488283af0f2c09cb26320bc": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lpAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "date",
+              "type": "uint256"
+            }
+          ],
+          "name": "ExitFarm",
+          "type": "event"
+        },
+        "0x9fc16615f48f603b9164a63f0ff1c7bc4c2b67fb3a51ecfd9856b0c843c9c022": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lpAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "date",
+              "type": "uint256"
+            }
+          ],
+          "name": "Farm",
+          "type": "event"
+        },
+        "0x71bab65ced2e5750775a0613be067df48ef06cf92a496ebf7663ae0660924954": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "rewards",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "date",
+              "type": "uint256"
+            }
+          ],
+          "name": "Harvest",
+          "type": "event"
+        },
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        "0x59c3a0b60c6ab7deb62e1440c9e72441db6db7dfe514dba8cb18e60c0d896efa": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lpAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "maticAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "w2rAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "RemoveLiquidity",
+          "type": "event"
+        },
+        "0x228d47c99c3df2f0352ef63baed152c51569c5547cb3c098f724742633b5eb27": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "maticAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "w2rAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "date",
+              "type": "uint256"
+            }
+          ],
+          "name": "SwapMaticForW2R",
+          "type": "event"
+        },
+        "0xa5753ab11bf99f3fce97d5d308a4fa395f21cddb5de19469d996a1f391905d73": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "w2rAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "maticAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "date",
+              "type": "uint256"
+            }
+          ],
+          "name": "SwapW2RForMatic",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x725593B861918B7084a9Ac0C225539262Ad51842",
+      "transactionHash": "0x0db2c93260bef5ab12cbf13901ff7ee50868ac165dcdc522a04ed55f94ff6340"
     }
   },
   "schemaVersion": "3.4.12",
-  "updatedAt": "2023-04-04T21:15:51.616Z",
+  "updatedAt": "2023-04-05T00:40:21.873Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

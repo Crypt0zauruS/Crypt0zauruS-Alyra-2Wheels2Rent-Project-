@@ -10611,12 +10611,108 @@
         }
       },
       "links": {},
-      "address": "0x2EE6Db56f67Ad43a65C4852d76e42e5AcDAd60FA",
-      "transactionHash": "0xcd523f95cd09f2bdbf3c85a02cfc988f52c4155e4aa0107da5d1c6b30515d188"
+      "address": "0xc16469cb5Ae081d80e515af05cBF81115c407f27",
+      "transactionHash": "0xa7739fadb256cc0ce943c0767d92a88d6b1706dc34ffabd2cb0cc1ad26ec8f6d"
+    },
+    "80001": {
+      "events": {
+        "0x2f5b19bb75097659707b1df69ba629ec7e5acfe3f775e362b8750d854037de02": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "contractAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bool",
+              "name": "status",
+              "type": "bool"
+            }
+          ],
+          "name": "ContractApproved",
+          "type": "event"
+        },
+        "0x8d30d41865a0b811b9545d879520d2dde9f4cc49e4241f486ad9752bc904b565": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "contractAddress",
+              "type": "address"
+            }
+          ],
+          "name": "ContractRemoved",
+          "type": "event"
+        },
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        "0x6a1dfbe4782732376da4ef50f66045bc4d94e8b78f7d415a5ee730630e0beba9": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "W2RTransferred",
+          "type": "event"
+        },
+        "0x09cbd8358db903b45ad50926a3d56db454311693921f2c54e362c7810d1f21f1": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "W2RWithdrawn",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0xB18E3915789e6D6aD45f92815925E92392eE0e1E",
+      "transactionHash": "0x41711377fb3ee743c68904068d51a94b7ad2e94925e71b7850dd639f37542713"
     }
   },
   "schemaVersion": "3.4.12",
-  "updatedAt": "2023-04-04T21:15:51.592Z",
+  "updatedAt": "2023-04-05T00:40:21.850Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

@@ -17258,14 +17258,200 @@
   },
   "networks": {
     "1337": {
-      "events": {},
+      "events": {
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        "0x3b503966ada21fd97099e978132ed0ed9b69d12e6c235864758b37932b47abd2": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "NFTId",
+              "type": "uint256"
+            }
+          ],
+          "name": "RenterBlacklisted",
+          "type": "event"
+        },
+        "0x62576b323defc6105d3c96bae5da2a00a7aae3f8f875d27b27da03d0c3cac2d7": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            }
+          ],
+          "name": "RenterRemovedFromBlacklist",
+          "type": "event"
+        },
+        "0x2521e1d2181ef8de636f6830a509e2813fb22c1822a283dad266e756f0e3c2ec": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "NFTId",
+              "type": "uint256"
+            }
+          ],
+          "name": "RenterRemovedFromWhitelist",
+          "type": "event"
+        },
+        "0xdf1fc30c9a67ee41e3e4e2050611e3d7aef8c0921a69a171a465272ae1952da6": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "NFTId",
+              "type": "uint256"
+            }
+          ],
+          "name": "RenterWhitelisted",
+          "type": "event"
+        }
+      },
       "links": {},
-      "address": "0x201a2155105E4d2d965eF578056bb38eC0308E92",
-      "transactionHash": "0x41b942169dd036ae5b8419884860a771d0265e7ac6ff14a1a5a452526214be0d"
+      "address": "0x16b1D69A818509e11D4D99A5dEd054ed45a48eB7",
+      "transactionHash": "0x6f757f5745dd0d7b5e7d66aee72fd24748c55acb5f5c568064825dc9f6d518d6"
+    },
+    "80001": {
+      "events": {
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        "0x3b503966ada21fd97099e978132ed0ed9b69d12e6c235864758b37932b47abd2": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "NFTId",
+              "type": "uint256"
+            }
+          ],
+          "name": "RenterBlacklisted",
+          "type": "event"
+        },
+        "0x62576b323defc6105d3c96bae5da2a00a7aae3f8f875d27b27da03d0c3cac2d7": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            }
+          ],
+          "name": "RenterRemovedFromBlacklist",
+          "type": "event"
+        },
+        "0x2521e1d2181ef8de636f6830a509e2813fb22c1822a283dad266e756f0e3c2ec": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "NFTId",
+              "type": "uint256"
+            }
+          ],
+          "name": "RenterRemovedFromWhitelist",
+          "type": "event"
+        },
+        "0xdf1fc30c9a67ee41e3e4e2050611e3d7aef8c0921a69a171a465272ae1952da6": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "renter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "NFTId",
+              "type": "uint256"
+            }
+          ],
+          "name": "RenterWhitelisted",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0xC701B6D703A94bBAdac5589bbb9ef50B8263a151",
+      "transactionHash": "0xfe94c4faff09f7f9e866b3d2b7466215175e7c986bb8aee86df34797614c97e7"
     }
   },
   "schemaVersion": "3.4.12",
-  "updatedAt": "2023-04-04T21:15:51.679Z",
+  "updatedAt": "2023-04-05T00:40:21.902Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
