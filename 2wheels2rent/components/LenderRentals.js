@@ -159,7 +159,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
       setRentals(rentals);
     } catch (error) {
       console.log(error);
-      showToast("Erreur lors de la récupération des locations", true);
+      //showToast("Erreur lors de la récupération des locations", true);
     } finally {
       setLoading(false);
     }
@@ -295,9 +295,9 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                                   Annuler
                                 </button>
                                 <br />
-                                Avant de confirmer, assurez-vous d&apos;avoir convenu
-                                avec votre locataire de la date et l&apos;heure de
-                                retour vers le{" "}
+                                Avant de confirmer, assurez-vous d&apos;avoir
+                                convenu avec votre locataire de la date et
+                                l&apos;heure de retour vers le{" "}
                                 <span style={{ color: "red" }}>
                                   {formatDate(rental.date + rental.duration)}
                                 </span>

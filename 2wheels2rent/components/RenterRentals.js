@@ -141,7 +141,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
       setRentals(rentals);
     } catch (error) {
       console.log(error);
-      showToast("Erreur lors de la récupération des locations", true);
+      // showToast("Erreur lors de la récupération des locations", true);
     } finally {
       setLoading(false);
     }

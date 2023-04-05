@@ -75,7 +75,7 @@ const CheckProposals = ({
         setProposalsToDelete([...proposalsToDelete, renter]);
     } catch (error) {
       console.log(error);
-      showToast("Erreur lors de la récupération des propositions", true);
+      //showToast("Erreur lors de la récupération des propositions", true);
     } finally {
       setLoading(false);
     }
