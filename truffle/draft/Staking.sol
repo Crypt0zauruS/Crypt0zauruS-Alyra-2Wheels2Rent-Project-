@@ -39,8 +39,6 @@ contract W2RStaking is Ownable {
     event LockPeriodUpdated(uint256 newLockPeriod);
     event EarlyUnstakePenaltyUpdated(uint256 newEarlyUnstakePenalty);
 
-    // l'adresse du flux de prix Chainlink pour le MATIC en USD doit être fournie en tant qu'argument
-    // par exemple 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0 pour le flux de prix MATIC / USD sur Polygon mainnet
     constructor(
         IERC20 _w2rToken,
         AggregatorV3Interface _priceFeed,

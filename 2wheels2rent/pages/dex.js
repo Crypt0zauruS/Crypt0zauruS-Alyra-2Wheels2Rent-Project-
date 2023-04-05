@@ -487,6 +487,15 @@ const Dex = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dexContract]);
 
+  const handleCopy = async (address) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      showToast("Contrat copié !");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (address && network) {
       setW2Raddress(W2R.networks[network.chainId]?.address);
@@ -675,8 +684,8 @@ const Dex = () => {
                 Cette opération permettra de vous retourner sur votre wallet les
                 MATIC et W2R que vous avez fournis au DEX. Vous rendez pour cela
                 tout ou partie des Matic-W2R LP Tokens détenus sur votre wallet.
-                Si vos Matic-W2R LP Tokens sont en farming, il faudra d&apos;abord
-                les récupérer.
+                Si vos Matic-W2R LP Tokens sont en farming, il faudra
+                d&apos;abord les récupérer.
               </h3>
             </div>
 
@@ -754,6 +763,26 @@ const Dex = () => {
                   </h3>
                 </div>
               </div>
+            </div>
+            <div>
+              <h2 className="text-center fs-6">
+                Contrat du W2R: {W2Raddress}{" "}
+                <span
+                  onClick={() => handleCopy(W2Raddress)}
+                  style={{ cursor: "pointer" }}
+                >
+                  💾
+                </span>
+              </h2>
+              <h2 className="text-center fs-6">
+                Contrat du Matic-W2R LP Token: {pairTokenAddress}{" "}
+                <span
+                  onClick={() => handleCopy(pairTokenAddress)}
+                  style={{ cursor: "pointer" }}
+                >
+                  💾
+                </span>
+              </h2>
             </div>
           </>
         ) : (

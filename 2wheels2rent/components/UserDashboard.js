@@ -80,6 +80,7 @@ const UserDashboard = ({ props }) => {
   );
   const bikeShareAbi = BikeShare.abi;
   const bikeRentAbi = BikeRent.abi;
+  const w2rAddress = W2R.networks[network.chainId]?.address;
   const [contract, setContract] = useState(null);
 
   const getWhitelistedInfos = useCallback(async () => {
@@ -322,7 +323,6 @@ const UserDashboard = ({ props }) => {
       setLoaded(true);
     }
     const w2rAbi = W2R.abi;
-    const w2rAddress = W2R.networks[network.chainId].address;
     if (network && address) {
       setW2Rcontract(
         new Contract(w2rAddress, w2rAbi, web3Provider?.getSigner())
@@ -473,6 +473,7 @@ const UserDashboard = ({ props }) => {
           getW2Rbalance={getW2Rbalance}
           activated={activated}
           setActivated={setActivated}
+          w2rAddress={w2rAddress}
         />
       )}
       {makeProposal && role === "emprunteur" && (

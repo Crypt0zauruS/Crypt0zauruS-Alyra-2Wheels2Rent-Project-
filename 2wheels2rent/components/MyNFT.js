@@ -92,6 +92,29 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
               ))
             : "loading..."}
         </ul>
+        {network.chainId === 80001 && (
+          <h2 className="fs-5" style={{ color: "orange" }}>
+            Contrat du NFT :{" "}
+            <a
+              style={{ color: "cyan", wordBreak: "break-all" }}
+              rel="noreferrer noopener"
+              target="_blank"
+              href={`https://testnet.rarible.com/token/polygon/${
+                role === "loueur"
+                  ? lenderNFTAddress
+                  : role === "emprunteur"
+                  ? renterNFTAddress
+                  : null
+              }:${NFTId}?tab=properties`}
+            >
+              {role === "loueur"
+                ? lenderNFTAddress
+                : role === "emprunteur"
+                ? renterNFTAddress
+                : null}
+            </a>
+          </h2>
+        )}
       </div>
     </div>
   );

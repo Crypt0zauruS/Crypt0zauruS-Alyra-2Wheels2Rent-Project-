@@ -205,6 +205,8 @@ contract MaticW2Rdex is Ownable {
         );
         uint lpAmount;
         if (totalMaticLiquidity == 0 && totalW2RLiquidity == 0) {
+            // the team has to bring the first (huge) liquidity
+            require(msg.sender == owner(), "Only owner can add liquidity");
             lpAmount = maticAmount; // Initial liquidity is 1:1
             totalMaticLiquidity = maticAmount;
             totalW2RLiquidity = w2rAmount;

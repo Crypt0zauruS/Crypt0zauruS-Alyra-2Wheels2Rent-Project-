@@ -20,6 +20,7 @@ const MyContract = ({
   getW2Rbalance,
   activated,
   setActivated,
+  w2rAddress,
 }) => {
   const { contractAddress } = userInfos;
 
@@ -271,6 +272,15 @@ const MyContract = ({
     }
   };
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(w2rAddress);
+      showToast("Contrat du W2R copié !");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     checkValues();
     getContractW2Rbalance();
@@ -370,6 +380,13 @@ const MyContract = ({
                 Déposer les W2R dans ce contrat
               </button>
             )}
+            <br />
+            <p style={{ color: "green" }}>
+              Contrat du W2R: {w2rAddress}{" "}
+              <span onClick={handleCopy} style={{ cursor: "pointer" }}>
+                💾
+              </span>
+            </p>
           </>
         )}
 
