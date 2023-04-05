@@ -188,11 +188,13 @@ const CheckProposals = ({
         });
       }, 2000);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalsToDelete, processingDone]);
 
   useEffect(() => {
     if (!contract) return;
     retrieveProposals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contract]);
 
   const formatDate = (date) => {
@@ -314,7 +316,7 @@ const CheckProposals = ({
                     W2R
                     <br />
                     <p>
-                      Choisissez l'heure de rendez-vous:{" "}
+                      Choisissez l&apos;heure de rendez-vous:{" "}
                       {formatDate(rentalDateMin)} à{" "}
                       {meetingHours[index] && (
                         <input

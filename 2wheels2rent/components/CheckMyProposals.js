@@ -130,11 +130,13 @@ const CheckMyProposals = ({
         });
       }, 2000);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalsToDelete, processingDone]);
 
   useEffect(() => {
     if (!contract) return;
     retrieveProposals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contract]);
 
   const formatDate = (date) => {

@@ -43,6 +43,7 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
         );
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [network, address]);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
     } else if (role === "emprunteur" && renterNFTAddress && NFTId) {
       getNFTInfos(renterNFTAddress, renterNFTAbi);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lenderNFTAddress, renterNFTAddress, NFTId]);
 
   return (

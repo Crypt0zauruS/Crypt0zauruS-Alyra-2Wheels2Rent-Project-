@@ -103,6 +103,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
 
   useEffect(() => {
     retrieveCurrentRental();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleShowCurrentRental = () => {
@@ -200,6 +201,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
 
   useEffect(() => {
     retrieveRentals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleShowAllRentals = () => {
@@ -293,8 +295,8 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                                   Annuler
                                 </button>
                                 <br />
-                                Avant de confirmer, assurez-vous d'avoir convenu
-                                avec votre locataire de la date et l'heure de
+                                Avant de confirmer, assurez-vous d&apos;avoir convenu
+                                avec votre locataire de la date et l&apos;heure de
                                 retour vers le{" "}
                                 <span style={{ color: "red" }}>
                                   {formatDate(rental.date + rental.duration)}

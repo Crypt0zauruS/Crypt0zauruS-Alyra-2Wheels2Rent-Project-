@@ -104,6 +104,7 @@ const UserDashboard = ({ props }) => {
     } catch (error) {
       console.log(error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, web3Provider]);
 
   const getNearbyUsers = async () => {
@@ -337,6 +338,7 @@ const UserDashboard = ({ props }) => {
     if (w2Rcontract) {
       getW2Rbalance();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [w2Rcontract]);
 
   return (
@@ -367,14 +369,15 @@ const UserDashboard = ({ props }) => {
             ) : (
               <div className="instructions2" style={{ marginTop: "-800px" }}>
                 <p>
-                  Aprés vous être localisé en appuyant sur le bouton "Me
-                  localiser" (marqueur{" "}
+                  Aprés vous être localisé en appuyant sur le bouton &quot;Me
+                  localiser&quot; (marqueur{" "}
                   <span style={{ color: "red" }}>rouge</span>
                   ), cliquez sur la carte pour choisir un nouveau lieu de
                   Rendez-vous (un marqueur{" "}
                   <span style={{ color: "blue" }}>bleu</span> apparaîtra).
                   <br />
-                  Ensuite, cliquez sur le bouton "Mettre à jour" pour valider.
+                  Ensuite, cliquez sur le bouton &quot;Mettre à jour&quot; pour
+                  valider.
                 </p>
                 {smallLoader && <Loader />}
               </div>

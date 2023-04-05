@@ -232,6 +232,7 @@ const MakeProposal = ({
         setLoading(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isDeactivated, bikeShareProposals]
   );
 
@@ -256,6 +257,7 @@ const MakeProposal = ({
       web3Provider?.getSigner()
     );
     getLenderInfos(lenders);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getLenderInfos]);
 
   return (
@@ -294,7 +296,7 @@ const MakeProposal = ({
                     <div className="container">
                       <div className="row align-items-center">
                         <p className="fs-5 text-center">
-                          Choisissez votre fourchette horaire, d'une durée entre
+                          Choisissez votre fourchette horaire, d&apos;une durée entre
                           3 et 12 heures, pour le jour de votre choix. <br />
                           Si votre proposition est acceptée, une heure de RDV
                           dans cet interval vous sera donnée.
@@ -386,7 +388,7 @@ const MakeProposal = ({
                           (Le dépôt de garantie de {deposit} W2R vous serait
                           rendu à la fin de la location)
                           <br />
-                          Pour l'instant, il ne vous sera rien demandé, mais si
+                          Pour l&apos;instant, il ne vous sera rien demandé, mais si
                           votre proposition est acceptée, votre contrat sera
                           débité de ce montant.
                         </p>

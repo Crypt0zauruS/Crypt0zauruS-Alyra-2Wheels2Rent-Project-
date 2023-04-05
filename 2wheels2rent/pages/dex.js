@@ -484,6 +484,7 @@ const Dex = () => {
       setLoading(false);
       console.error("Erreur lors de la récupération des balances:", error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dexContract]);
 
   useEffect(() => {
@@ -498,6 +499,7 @@ const Dex = () => {
           new Contract(pairTokenAddress, pairTokenABI, signer)
         );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, network, W2Raddress, dexAddress, pairTokenAddress]);
 
   useEffect(() => {
@@ -521,8 +523,8 @@ const Dex = () => {
         setRewards(0);
       }
     };
-
     refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, W2Rcontract, dexContract, pairTokenContract]);
 
   return (
@@ -673,7 +675,7 @@ const Dex = () => {
                 Cette opération permettra de vous retourner sur votre wallet les
                 MATIC et W2R que vous avez fournis au DEX. Vous rendez pour cela
                 tout ou partie des Matic-W2R LP Tokens détenus sur votre wallet.
-                Si vos Matic-W2R LP Tokens sont en farming, il faudra d'abord
+                Si vos Matic-W2R LP Tokens sont en farming, il faudra d&apos;abord
                 les récupérer.
               </h3>
             </div>

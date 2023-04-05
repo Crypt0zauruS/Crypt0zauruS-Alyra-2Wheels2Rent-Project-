@@ -75,8 +75,8 @@ const NearbyUsersMap = ({
   });
 
   const HandleMapClick = ({ setNewRDV }) => {
-    updateGPS &&
-      useMapEvent("click", (e) => {
+    useMapEvent("click", (e) => {
+      if (updateGPS) {
         const distance = new LatLng(coordinates[0], coordinates[1]).distanceTo(
           e.latlng
         );
@@ -95,8 +95,8 @@ const NearbyUsersMap = ({
             "Vous ne pouvez pas choisir un point de rendez-vous trop loin"
           );
         }
-      });
-
+      }
+    });
     return null;
   };
 

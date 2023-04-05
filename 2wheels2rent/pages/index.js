@@ -339,6 +339,7 @@ export default function Home() {
         RenterWhitelist.networks[network.chainId]?.address
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [network, address]);
 
   return (

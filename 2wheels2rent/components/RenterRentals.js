@@ -88,6 +88,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
 
   useEffect(() => {
     retrieveCurrentRental();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleShowCurrentRental = () => {
@@ -148,6 +149,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
 
   useEffect(() => {
     retrieveRentals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleShowAllRentals = () => {

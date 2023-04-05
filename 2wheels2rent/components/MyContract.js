@@ -55,6 +55,7 @@ const MyContract = ({
     } finally {
       setLoaderContract(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contract, role, setLoaderContract]);
 
   const convertGPS = () => {
@@ -215,6 +216,7 @@ const MyContract = ({
     } finally {
       setLoaderContract(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, contractAddress, w2Rcontract]);
 
   const handleWithdrawW2R = async (e) => {
