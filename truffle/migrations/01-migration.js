@@ -148,7 +148,7 @@ module.exports = async (deployer, network, accounts) => {
     /////////////////////////////////////////////////////////////////////////////////
 
     // if Ganache, add liquidity to the DEX
-    if (network === "development") {
+    if (network === "cucu") {
       // Transfer 1,000 W2R tokens to the DEX
       const transferMatic = web3.utils.toWei("100", "ether");
       const transferW2R = web3.utils.toWei("1000", "ether");
