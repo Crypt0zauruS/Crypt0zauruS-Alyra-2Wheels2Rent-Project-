@@ -206,7 +206,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                           </tr>
                           <tr>
                             <th scope="row">Total</th>
-                            <td>{rental.total} W2R</td>
+                            <td>{rental.price + rental.deposit} W2R</td>
                           </tr>
                           <tr>
                             <th scope="row">Récompense</th>

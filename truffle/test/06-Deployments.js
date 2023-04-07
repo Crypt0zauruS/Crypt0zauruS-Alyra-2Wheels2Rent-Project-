@@ -12,7 +12,6 @@ const LenderWhitelist = artifacts.require("LenderWhitelist.sol");
 const RenterWhitelist = artifacts.require("RenterWhitelist.sol");
 const lenderIPFS = "lenderIPFS";
 const renterIPFS = "renterIPFS";
-const { BN, expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
 const { expect } = require("chai");
 
 contract("BikeShare Deployment", (accounts) => {
@@ -21,9 +20,8 @@ contract("BikeShare Deployment", (accounts) => {
   const owner = accounts[0];
 
   beforeEach(async () => {
-    // Deploy W2R
     W2RInstance = await W2R.new(initialSupply, { from: owner });
-    // Deploy VaultW2R
+
     const VaultW2RInstance = await VaultW2R.new(W2RInstance.address, {
       from: owner,
     });
@@ -55,7 +53,6 @@ contract("BikeShare Deployment", (accounts) => {
       from: owner,
     });
 
-    // Deploy LenderWhitelist contract
     const LenderWhitelistInstance = await LenderWhitelist.new(
       TwoWheels2RentLenderInstance.address,
       W2RInstance.address,
@@ -139,7 +136,7 @@ contract("BikeShare Deployment", (accounts) => {
         const proposalDuration = await bikeShare.proposalDuration();
         expect(proposalDuration.toString()).to.equal(
           (2 * 24 * 60 * 60).toString()
-        ); // 2 days
+        );
       });
 
       it("should have the correct initial minimalRental value", async () => {
@@ -158,9 +155,8 @@ contract("BikeRent Deployment", (accounts) => {
   const owner = accounts[0];
 
   beforeEach(async () => {
-    // Deploy W2R
     W2RInstance = await W2R.new(initialSupply, { from: owner });
-    // Deploy VaultW2R
+
     const VaultW2RInstance = await VaultW2R.new(W2RInstance.address, {
       from: owner,
     });
@@ -192,7 +188,6 @@ contract("BikeRent Deployment", (accounts) => {
       from: owner,
     });
 
-    // Deploy LenderWhitelist contract
     const LenderWhitelistInstance = await LenderWhitelist.new(
       TwoWheels2RentLenderInstance.address,
       W2RInstance.address,

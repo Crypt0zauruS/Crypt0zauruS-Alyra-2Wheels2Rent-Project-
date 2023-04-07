@@ -1,6 +1,8 @@
+const { BN, expectRevert } = require("@openzeppelin/test-helpers");
+const { expect } = require("chai");
 const BikeShare = artifacts.require("./BikeShare.sol");
 const W2R = artifacts.require("W2R.sol");
-const initialSupply = 160000000;
+const initialSupply = web3.utils.toBN("160000000");
 const VaultW2R = artifacts.require("VaultW2R.sol");
 const MaticW2RPairToken = artifacts.require("MaticW2RPairToken.sol");
 const MaticW2Rdex = artifacts.require("MaticW2Rdex.sol");
@@ -11,18 +13,16 @@ const LenderWhitelist = artifacts.require("LenderWhitelist.sol");
 const RenterWhitelist = artifacts.require("RenterWhitelist.sol");
 const lenderIPFS = "lenderIPFS";
 const renterIPFS = "renterIPFS";
-const { BN, expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
-const { expect } = require("chai");
 
 contract("Utilities", (accounts) => {
   let utilities;
   let W2RInstance;
   const owner = accounts[0];
+  let amount;
 
   beforeEach(async () => {
-    // Deploy W2R
     W2RInstance = await W2R.new(initialSupply, { from: owner });
-    // Deploy VaultW2R
+
     const VaultW2RInstance = await VaultW2R.new(W2RInstance.address, {
       from: owner,
     });
@@ -54,7 +54,6 @@ contract("Utilities", (accounts) => {
       from: owner,
     });
 
-    // Deploy LenderWhitelist contract
     const LenderWhitelistInstance = await LenderWhitelist.new(
       TwoWheels2RentLenderInstance.address,
       W2RInstance.address,
@@ -110,10 +109,12 @@ contract("Utilities", (accounts) => {
     );
     const bikeShareAddress = bikeShareRef.bikeShareContract;
     utilities = await BikeShare.at(bikeShareAddress);
-    await W2RInstance.approve(utilities.address, 1000000, { from: owner });
+    await W2RInstance.approve(utilities.address, web3.utils.toBN("1000000"), {
+      from: owner,
+    });
   });
 
-  describe("Utilities Functions", () => {
+  describe("Utilities Functions", async () => {
     it("should be deactivated after initialization", async () => {
       const isDeactivated = await utilities.isDeactivated();
       expect(isDeactivated).to.equal(true);
@@ -194,6 +195,37 @@ contract("Utilities", (accounts) => {
       await expectRevert(
         utilities.depositW2R(amount, { from: owner }),
         "Need approval"
+      );
+    });
+
+    it("should revert if W2R deposit is greater than approved amount", async () => {
+      const latitude = "42.3601";
+      const longitude = "-71.0589";
+      await utilities.activate(latitude, longitude, { from: owner });
+      const amount = new BN("100");
+      await W2RInstance.approve(utilities.address, 99, { from: owner });
+      await expectRevert(
+        utilities.depositW2R(amount, { from: owner }),
+        "Need approval"
+      );
+    });
+
+    it("should revert if deposit is greater than user balance", async () => {
+      amount = web3.utils.toBN("10000000000000000000000000000");
+      const ownerBalance = await W2RInstance.balanceOf(owner);
+      // bypass revert ERC20 message
+      if (ownerBalance.gte(amount)) {
+        await W2RInstance.transfer(accounts[1], amount, { from: owner });
+      } else {
+        console.log("Transfer amount exceeds owner balance");
+      }
+      const latitude = "42.3601";
+      const longitude = "-71.0589";
+      await utilities.activate(latitude, longitude, { from: owner });
+      await W2RInstance.approve(utilities.address, amount, { from: owner });
+      await expectRevert(
+        utilities.depositW2R(amount, { from: owner }),
+        "Insufficient W2R"
       );
     });
 

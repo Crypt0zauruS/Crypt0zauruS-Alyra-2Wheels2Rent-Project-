@@ -90,7 +90,7 @@ contract MaticW2Rdex is Ownable {
         W2R = IERC20(W2RAddress);
         lpToken = IMaticW2RPairToken(lpTokenAddress);
         swapRate = initialSwapRate;
-        rewardRatePerSecond = 10 ** 10; // 30% de la valeur initiale MATIC-W2R récompensée en W2R par an
+        rewardRatePerSecond = 10 ** 10; // w2r reward rate per second at the launch of the dex
         vaultW2R = I5VaultW2R(vaultW2RAddress);
         securityPercentage = 5;
         feesPercent = 1;
@@ -133,11 +133,12 @@ contract MaticW2Rdex is Ownable {
     }
 
     function swapMaticForW2R() external payable {
-        require(msg.value > 0, "MATIC amount must be greater than 0");
+        require(msg.value > 0, "must be greater 0");
         require((msg.value * feesPercent * 100) >= 10000);
         uint fees = (msg.value * feesPercent * 100) / 10000;
+        require(msg.sender.balance > msg.value + fees, "not enough Matic");
         uint w2rAmount = (msg.value - fees) * swapRate;
-        require(w2rAmount > 0, "W2R amount must be greater than 0");
+        require(w2rAmount > 0, "W2R must be greater 0");
         require((totalW2RLiquidity * securityPercentage * 100) >= 10000);
         require(
             (totalW2RLiquidity * securityPercentage * 100) / 10000 >= w2rAmount,
@@ -161,6 +162,7 @@ contract MaticW2Rdex is Ownable {
             W2R.allowance(msg.sender, address(this)) >= w2rAmount,
             "You need to approve W2R first"
         );
+        require(W2R.balanceOf(msg.sender) >= w2rAmount, "Not enough W2R");
         uint maticAmount = w2rAmount / swapRate;
         require((maticAmount * feesPercent * 100) >= 10000);
         uint fee = (maticAmount * feesPercent * 100) / 10000;
@@ -207,19 +209,22 @@ contract MaticW2Rdex is Ownable {
         if (totalMaticLiquidity == 0 && totalW2RLiquidity == 0) {
             // the team has to bring the first (huge) liquidity
             require(msg.sender == owner(), "Only owner can add liquidity");
-            lpAmount = maticAmount; // Initial liquidity is 1:1
+            lpAmount = maticAmount;
             totalMaticLiquidity = maticAmount;
             totalW2RLiquidity = w2rAmount;
         } else {
-            uint totalLiquidity = totalMaticLiquidity +
-                totalW2RLiquidity /
-                swapRate;
-            lpAmount = (maticAmount * 1e18) / totalLiquidity;
+            // constant invariant formula
+            uint k = totalMaticLiquidity * totalW2RLiquidity;
+            totalMaticLiquidity += maticAmount;
+            totalW2RLiquidity += w2rAmount;
+            uint newK = totalMaticLiquidity * totalW2RLiquidity;
+            lpAmount = (lpToken.totalSupply() * (newK - k)) / k;
             // prevent a user to have too much power on the contract
             require((lpToken.totalSupply() * securityPercentage) >= 100);
             require(
                 w2rAmount <=
-                    (totalW2RLiquidity * securityPercentage * 100) / 10000,
+                    (totalW2RLiquidity * securityPercentage * 100) / 10000 ||
+                    msg.sender == owner(),
                 "You can't add more than the security % of the total LP supply"
             );
             totalMaticLiquidity += maticAmount;
@@ -240,11 +245,13 @@ contract MaticW2Rdex is Ownable {
             totalMaticLiquidity > 0 && totalW2RLiquidity > 0,
             "No liquidity to remove"
         );
-        // Calculate the amount of MATIC and W2R to refund to the user based on existing LP tokens
-        uint maticAmount = (lpAmount * totalMaticLiquidity) /
-            lpToken.totalSupply();
-        uint w2rAmount = (lpAmount * totalW2RLiquidity) / lpToken.totalSupply();
-        // update liquidity
+        require(LPBalance[msg.sender] >= lpAmount, "Not enough LP tokens");
+        // Calculate the proportion of LP tokens the user is removing
+        uint proportion = (lpAmount * 1e18) / lpToken.totalSupply();
+        // Calculate the amount of MATIC and W2R to refund
+        uint maticAmount = (totalMaticLiquidity * proportion) / 1e18;
+        uint w2rAmount = (totalW2RLiquidity * proportion) / 1e18;
+        // update data
         LPBalance[msg.sender] -= lpAmount;
         totalMaticLiquidity -= maticAmount;
         totalW2RLiquidity -= w2rAmount;

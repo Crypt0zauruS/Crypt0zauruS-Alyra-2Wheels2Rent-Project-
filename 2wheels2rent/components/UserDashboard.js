@@ -312,13 +312,15 @@ const UserDashboard = ({ props }) => {
     handleCheckActivated();
   }, [contract]);
 
-  console.log("activated", activated);
   useEffect(() => {
     getNearbyUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rad]);
 
   useEffect(() => {
+    if (!W2R.networks[network.chainId]) {
+      disconnect();
+    }
     if (!loaded) {
       setLoaded(true);
     }

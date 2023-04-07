@@ -135,6 +135,9 @@ const CheckMyProposals = ({
 
   useEffect(() => {
     if (!contract) return;
+    alert(
+      "si vous avez des propositions expirées ou annulées par un loueur, votre wallet vous demandera de mettre à jour votre contrat"
+    );
     retrieveProposals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contract]);

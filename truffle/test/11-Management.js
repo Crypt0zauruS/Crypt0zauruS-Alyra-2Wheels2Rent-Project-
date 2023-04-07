@@ -1,7 +1,7 @@
 const BikeRent = artifacts.require("./BikeRent.sol");
 const BikeShare = artifacts.require("./BikeShare.sol");
 const W2R = artifacts.require("W2R.sol");
-const initialSupply = 160000000;
+const initialSupply = web3.utils.toBN("160000000");
 const VaultW2R = artifacts.require("VaultW2R.sol");
 const MaticW2RPairToken = artifacts.require("MaticW2RPairToken.sol");
 const MaticW2Rdex = artifacts.require("MaticW2Rdex.sol");
@@ -12,7 +12,7 @@ const LenderWhitelist = artifacts.require("LenderWhitelist.sol");
 const RenterWhitelist = artifacts.require("RenterWhitelist.sol");
 const lenderIPFS = "lenderIPFS";
 const renterIPFS = "renterIPFS";
-const { BN, expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
+const { expectRevert } = require("@openzeppelin/test-helpers");
 const { expect } = require("chai");
 
 contract("BikeShare", (accounts) => {
@@ -22,9 +22,7 @@ contract("BikeShare", (accounts) => {
   let LenderWhitelistInstance;
 
   beforeEach(async () => {
-    // Deploy W2R
     W2RInstance = await W2R.new(initialSupply, { from: owner });
-    // Deploy VaultW2R
     const VaultW2RInstance = await VaultW2R.new(W2RInstance.address, {
       from: owner,
     });
@@ -56,7 +54,6 @@ contract("BikeShare", (accounts) => {
       from: owner,
     });
 
-    // Deploy LenderWhitelist contract
     LenderWhitelistInstance = await LenderWhitelist.new(
       TwoWheels2RentLenderInstance.address,
       W2RInstance.address,
@@ -160,6 +157,19 @@ contract("BikeShare", (accounts) => {
         "Only whitelistContract"
       );
     });
+
+    it("should transfer funds to the owner", async () => {
+      const initialBalance = await W2RInstance.balanceOf(owner);
+      await W2RInstance.transfer(bikeShare.address, web3.utils.toWei("10"), {
+        from: owner,
+      });
+
+      await LenderWhitelistInstance.removeAddressFromWhitelist({
+        from: owner,
+      });
+      const finalBalance = await W2RInstance.balanceOf(owner);
+      expect(finalBalance.sub(initialBalance)).to.be.bignumber.equal("0");
+    });
   });
 });
 
@@ -170,9 +180,8 @@ contract("BikeRent", (accounts) => {
   let RenterWhitelistInstance;
 
   beforeEach(async () => {
-    // Deploy W2R
     W2RInstance = await W2R.new(initialSupply, { from: owner });
-    // Deploy VaultW2R
+
     const VaultW2RInstance = await VaultW2R.new(W2RInstance.address, {
       from: owner,
     });
@@ -204,7 +213,6 @@ contract("BikeRent", (accounts) => {
       from: owner,
     });
 
-    // Deploy LenderWhitelist contract
     const LenderWhitelistInstance = await LenderWhitelist.new(
       TwoWheels2RentLenderInstance.address,
       W2RInstance.address,
@@ -302,6 +310,19 @@ contract("BikeRent", (accounts) => {
         bikeRent.destroy({ from: accounts[2] }),
         "Only whitelistContract"
       );
+    });
+
+    it("should transfer funds to the owner", async () => {
+      const initialBalance = await W2RInstance.balanceOf(owner);
+      await W2RInstance.transfer(bikeRent.address, web3.utils.toWei("10"), {
+        from: owner,
+      });
+
+      await RenterWhitelistInstance.removeAddressFromWhitelist({
+        from: owner,
+      });
+      const finalBalance = await W2RInstance.balanceOf(owner);
+      expect(finalBalance.sub(initialBalance)).to.be.bignumber.equal("0");
     });
   });
 });

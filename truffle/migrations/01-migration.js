@@ -1,5 +1,5 @@
 const W2R = artifacts.require("W2R");
-const initialSupply = 160000000;
+const initialSupply = 160000000; // DECIMALS ALREADY IN THE CONSTRUCTOR !!!
 const VaultW2R = artifacts.require("VaultW2R");
 const MaticW2RPairToken = artifacts.require("MaticW2RPairToken");
 const MaticW2Rdex = artifacts.require("MaticW2Rdex");
@@ -32,11 +32,6 @@ module.exports = async (deployer, network, accounts) => {
       from: deployerAccount,
     });
     console.log("1,000,000 W2R tokens transferred to VaultW2R");
-    const vaultBalance = await W2RInstance.balanceOf(VaultW2RInstance.address);
-    console.log(
-      "VaultW2R balance: ",
-      web3.utils.fromWei(vaultBalance, "ether")
-    );
 
     // deploy LP token
     await deployer.deploy(MaticW2RPairToken);
@@ -147,11 +142,11 @@ module.exports = async (deployer, network, accounts) => {
 
     /////////////////////////////////////////////////////////////////////////////////
 
-    // if Ganache, add liquidity to the DEX
-    if (network === "cucu") {
-      // Transfer 1,000 W2R tokens to the DEX
-      const transferMatic = web3.utils.toWei("100", "ether");
-      const transferW2R = web3.utils.toWei("1000", "ether");
+    // if Ganache
+    if (network === "development") {
+      // Transfer 1,000,000 W2R tokens to the DEX
+      const transferMatic = web3.utils.toWei("100000", "ether");
+      const transferW2R = web3.utils.toWei("1000000", "ether");
       // account[0] approve W2R transfer to DEX
       await W2RInstance.approve(MaticW2RdexInstance.address, transferW2R, {
         from: deployerAccount,
@@ -161,7 +156,9 @@ module.exports = async (deployer, network, accounts) => {
         from: deployerAccount,
         value: transferMatic,
       });
-      console.log("1,000 W2R tokens and 100 MATIC transferred to MaticW2Rdex");
+      console.log(
+        "1,000000 W2R tokens and 100000 MATIC transferred to MaticW2Rdex"
+      );
       // LP token Total supply
       const LPtokenTotalSupply = await MaticW2RPairTokenInstance.totalSupply();
       console.log(
@@ -188,6 +185,13 @@ module.exports = async (deployer, network, accounts) => {
       console.log(
         "deployer LP balance: ",
         web3.utils.fromWei(deployerLPBalance, "ether")
+      );
+      const vaultBalance = await W2RInstance.balanceOf(
+        VaultW2RInstance.address
+      );
+      console.log(
+        "VaultW2R balance: ",
+        web3.utils.fromWei(vaultBalance, "ether")
       );
       // transfer 100000 W2R from account[0] to account[1]
       const transferAmount2 = web3.utils.toWei("100000", "ether");

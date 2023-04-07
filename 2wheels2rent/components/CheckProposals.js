@@ -20,6 +20,20 @@ const CheckProposals = ({
   const [loading, setLoading] = useState(false);
   const { address: MyContractAddress } = contract;
 
+  const cleanProposals = async () => {
+    try {
+      if (proposals.length === 0) {
+        showToast("Aucune proposition à supprimer");
+        return;
+      }
+      await contract.deleteOldProposals();
+      retrieveProposals();
+      showToast("Propositions expirées supprimées");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const retrieveProposals = async () => {
     setLoading(true);
     try {
@@ -86,7 +100,8 @@ const CheckProposals = ({
     rentalTime,
     rate,
     depositAmount,
-    meetingHour
+    meetingHour,
+    rentalDateMinTimestamp
   ) => {
     if (!ethers.utils.isAddress(renter)) {
       showToast("Adresse invalide", true);
@@ -95,16 +110,18 @@ const CheckProposals = ({
     try {
       setLoading(true);
       const checkW2Rrenter = await w2Rcontract.balanceOf(renter);
-      // convert meetingHour to timestamp
-      const meetingHourTimestamp = Math.floor(
-        new Date(
-          new Date().getFullYear(),
-          new Date().getMonth(),
-          new Date().getDate(),
-          meetingHour.split(":")[0],
-          meetingHour.split(":")[1]
-        ).getTime() / 1000
+      const rentalDateMinInDate = new Date(rentalDateMinTimestamp * 1000);
+      const combinedDateTime = new Date(
+        rentalDateMinInDate.getFullYear(),
+        rentalDateMinInDate.getMonth(),
+        rentalDateMinInDate.getDate(),
+        meetingHour.split(":")[0],
+        meetingHour.split(":")[1]
       );
+      const meetingHourTimestamp = Math.floor(
+        combinedDateTime.getTime() / 1000
+      );
+
       if (
         Number(ethers.utils.formatUnits(checkW2Rrenter.toString(), "ether")) <
         Number(ethers.utils.formatUnits(rate.toString(), "ether")) *
@@ -117,6 +134,7 @@ const CheckProposals = ({
         );
         return;
       }
+
       const tx = await contract.acceptProposal(
         renter,
         meetingHourTimestamp,
@@ -142,7 +160,7 @@ const CheckProposals = ({
     } catch (error) {
       console.log(error);
       showToast(
-        "Erreur lors de l'acceptation de la proposition, ou limite quotidienne atteinte pour le demandeur",
+        "Erreur, ou heure de RDV hors de la fourchette, ou limite quotidienne atteinte pour le demandeur",
         true
       );
     } finally {
@@ -193,6 +211,9 @@ const CheckProposals = ({
 
   useEffect(() => {
     if (!contract) return;
+    alert(
+      "N'oubliez pas de nettoyer vos propositions expirées, vous pourriez manquer des locations !"
+    );
     retrieveProposals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contract]);
@@ -216,7 +237,7 @@ const CheckProposals = ({
       {!loading ? (
         <h2 className="text-center mb-4">
           {proposals.length > 0
-            ? "Liste des propositions reçues"
+            ? `Liste des propositions reçues (${proposals.length})`
             : "Pas de proposition pour l'instant"}
         </h2>
       ) : (
@@ -242,6 +263,8 @@ const CheckProposals = ({
               const rentalDateMaxHour = extractHour(rentalDateMax);
               const rentalDateMinDate = new Date(rentalDateMin * 1000);
               const rentalDateMaxDate = new Date(rentalDateMax * 1000);
+              // convert hex rentalDateMin to timestamp
+              const rentalDateMinTimestamp = Number(rentalDateMin._hex);
 
               const diffInMinutes = differenceInMinutes(
                 rentalDateMaxDate,
@@ -338,7 +361,8 @@ const CheckProposals = ({
                           rentalTime,
                           rate,
                           depositAmount,
-                          meetingHours[index]
+                          meetingHours[index],
+                          rentalDateMinTimestamp
                         )
                       }
                     >
@@ -356,7 +380,17 @@ const CheckProposals = ({
             }
           )}
         </ul>
+        {proposals.length > 0 && (
+          <button
+            onClick={cleanProposals}
+            className="btn btn-warning m-2"
+            style={{ margin: "0 auto", display: "block" }}
+          >
+            Nettoyer les propositions expirées
+          </button>
+        )}
       </div>
+
       <button
         onClick={() => setCheckProposals(false)}
         className="btn btn-danger"

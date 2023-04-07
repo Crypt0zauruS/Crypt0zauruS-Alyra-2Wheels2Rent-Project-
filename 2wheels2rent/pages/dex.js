@@ -7,6 +7,8 @@ import MaticW2RPairToken from "../contracts/MaticW2RPairToken.json";
 import { toast, ToastContainer } from "react-toastify";
 import Footer from "../components/Footer";
 import Loader from "../components/Loader";
+import Image from "next/image";
+import W2Rpicture from "../private/W2R.png";
 
 const Dex = () => {
   const { web3Provider, address, network } = useWeb3Context();
@@ -103,7 +105,9 @@ const Dex = () => {
             `Swap effectué avec succès: ${ethers.utils.formatUnits(
               w2rAmount,
               18
-            )} W2R pour ${ethers.utils.formatEther(maticAmount)} MATIC`
+            )} W2R pour ${Number(ethers.utils.formatEther(maticAmount)).toFixed(
+              2
+            )} MATIC`
           );
         }
       );
@@ -142,7 +146,9 @@ const Dex = () => {
           showToast(
             `Swap effectué avec succès: ${ethers.utils.formatEther(
               maticAmount
-            )} MATIC pour ${ethers.utils.formatUnits(w2rAmount, 18)} W2R`
+            )} MATIC pour ${Number(
+              ethers.utils.formatUnits(w2rAmount, 18)
+            ).toFixed(2)} W2R`
           );
         }
       );
@@ -203,9 +209,9 @@ const Dex = () => {
             lpAmount
           );
           showToast(
-            `Ajout de liquidité effectué avec succès: ${ethers.utils.formatEther(
-              maticAmount
-            )} MATIC et ${ethers.utils.formatUnits(
+            `Ajout de liquidité effectué avec succès: ${Number(
+              ethers.utils.formatEther(maticAmount)
+            ).toFixed(2)} MATIC et ${ethers.utils.formatUnits(
               w2rAmount,
               18
             )} W2R, Matic-W2R LP Tokens dans votre wallet.`
@@ -267,12 +273,15 @@ const Dex = () => {
             w2rAmount
           );
           showToast(
-            `Retrait de liquidité effectué avec succès: ${ethers.utils.formatUnits(
-              lpAmount,
-              18
+            `Retrait de liquidité effectué avec succès: ${Number(
+              ethers.utils.formatUnits(lpAmount, 18)
+            ).toFixed(
+              2
             )} Matic-W2R LP Tokens rendus pour ${ethers.utils.formatEther(
               maticAmount
-            )} MATIC et ${ethers.utils.formatUnits(w2rAmount, 18)} W2R`
+            )} MATIC et ${Number(
+              ethers.utils.formatUnits(w2rAmount, 18)
+            ).toFixed(2)} W2R`
           );
         }
       );
@@ -314,10 +323,9 @@ const Dex = () => {
       dexContract.once("Farm", (user, lpAmount, date) => {
         console.log("user", user, "LP", lpAmount, "date", date);
         showToast(
-          `Staking effectué avec succès: ${ethers.utils.formatUnits(
-            lpAmount,
-            18
-          )} Matic-W2R LP Tokens stakés`
+          `Staking effectué avec succès: ${Number(
+            ethers.utils.formatUnits(lpAmount, 18)
+          ).toFixed(2)} Matic-W2R LP Tokens stakés`
         );
       });
       setLoading(false);
@@ -346,9 +354,8 @@ const Dex = () => {
         console.log("user", user, "rewards", rewards, "date", date);
         showToast(
           `Harvest effectué avec succès: 
-            ${ethers.utils.formatUnits(
-              rewards,
-              18
+            ${Number(ethers.utils.formatUnits(rewards, 18)).toFixed(
+              2
             )} W2R de récompenses récupérées`
         );
       });
@@ -377,10 +384,9 @@ const Dex = () => {
       dexContract.once("ExitFarm", (user, lpAmount, date) => {
         console.log("user", user, "LP", lpAmount, "date", date);
         showToast(
-          `Retrait du farming effectué avec succès: ${ethers.utils.formatUnits(
-            lpAmount,
-            18
-          )} Matic-W2R LP Tokens retirés avec récompenses en W2R`
+          `Retrait du farming effectué avec succès: ${Number(
+            ethers.utils.formatUnits(lpAmount, 18)
+          ).toFixed(2)} Matic-W2R LP Tokens retirés avec récompenses en W2R`
         );
       });
       setLoading(false);
@@ -442,19 +448,19 @@ const Dex = () => {
       const [w2rContract, maticContract, lptokenContract] =
         await dexContract?.getContractBalances();
       setUserBalances({
-        matic: Number(MaticUser).toFixed(2),
-        w2r: Number(ethers.utils.formatEther(w2rUser)).toFixed(2),
-        lpToken: Number(ethers.utils.formatEther(lptokenUser)).toFixed(2),
+        matic: Number(MaticUser).toFixed(4),
+        w2r: Number(ethers.utils.formatEther(w2rUser)).toFixed(4),
+        lpToken: Number(ethers.utils.formatEther(lptokenUser)).toFixed(4),
       });
       setContractBalances({
-        matic: Number(ethers.utils.formatEther(maticContract)).toFixed(2),
-        w2r: Number(ethers.utils.formatEther(w2rContract)).toFixed(2),
-        lpToken: Number(ethers.utils.formatEther(lptokenContract)).toFixed(2),
+        matic: Number(ethers.utils.formatEther(maticContract)).toFixed(4),
+        w2r: Number(ethers.utils.formatEther(w2rContract)).toFixed(4),
+        lpToken: Number(ethers.utils.formatEther(lptokenContract)).toFixed(4),
       });
       const farmedLPtokens = await dexContract?.farming(address);
       setFarmedLP(
         Number(ethers.utils.formatEther(farmedLPtokens[1])) > 0
-          ? Number(ethers.utils.formatEther(farmedLPtokens[1])).toFixed(2)
+          ? Number(ethers.utils.formatEther(farmedLPtokens[1])).toFixed(4)
           : 0
       );
       const myRewards = await dexContract?.viewRewards();
@@ -539,7 +545,16 @@ const Dex = () => {
   return (
     <div className="container dex-container">
       <div className="row" style={{ marginTop: "290px" }}>
-        <h1 className="text-center fs-1">2Wheelers&apos; DEX</h1>
+        <h1 className="text-center fs-1">
+          2Wheelers&apos; DEX{" "}
+          <Image
+            src={W2Rpicture}
+            width={100}
+            height={100}
+            alt="W2R picture"
+            style={{ width: "100px" }}
+          />
+        </h1>
         {address ? (
           <>
             <div className="col-12">
@@ -750,7 +765,7 @@ const Dex = () => {
             </div>
             <div className="col-12 swap-section">
               <div className="balance d-flex align-items-center mb-2">
-                <h2 className="fs-5">Récompenses: {rewards} W2R</h2>
+                <h2 className="fs-5 m-2">Récompenses: {rewards} W2R</h2>
                 <div className="ml-auto d-flex">
                   <button className="btn btn-primary m-2" onClick={harvest}>
                     Réclamer et continuer le farming

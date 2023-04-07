@@ -1,0 +1,180 @@
+
+Compiling your contracts...
+===========================
+> Everything is up to date, there is nothing to compile.
+
+
+Starting migrations...
+======================
+> Network name:    'mumbai'
+> Network id:      80001
+> Block gas limit: 20621020 (0x13aa6dc)
+
+
+01-migration.js
+===============
+
+   Deploying 'W2R'
+   ---------------
+   > transaction hash:    0x9679478dd4240141f97523930f4b55405246e70d0a048034f8760644cd9dffd4
+- Blocks: 0            Seconds: 0
+- Blocks: 2            Seconds: 4
+   > Blocks: 2            Seconds: 4
+   > contract address:    0xA4fb73D57C0a9320CfA3B14D2bfF916fc8Fd7174
+   > block number:        34090582
+   > block timestamp:     1680897205
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.05417582093083209
+   > gas used:            1045888 (0xff580)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00261472001568832 ETH
+
+W2R address:  0xA4fb73D57C0a9320CfA3B14D2bfF916fc8Fd7174
+
+   Deploying 'VaultW2R'
+   --------------------
+   > transaction hash:    0x77a1ab876185ad1a17c145a9f533e73ab3bcc047046308f35519cd7ae3453736
+- Blocks: 0            Seconds: 0
+- Blocks: 2            Seconds: 4
+   > Blocks: 2            Seconds: 4
+   > contract address:    0x0e5b413216A9CDf0601F2b22d3782eD945b04a9F
+   > block number:        34090588
+   > block timestamp:     1680897217
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.05191654591727644
+   > gas used:            903710 (0xdca1e)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00225927501355565 ETH
+
+VaultW2R address:  0x0e5b413216A9CDf0601F2b22d3782eD945b04a9F
+1,000,000 W2R tokens transferred to VaultW2R
+
+   Deploying 'MaticW2RPairToken'
+   -----------------------------
+   > transaction hash:    0x568710caebb254c33fa0561dd8d2c587724409ab8b2bf24e5e520a6c0cfdb3bf
+- Blocks: 0            Seconds: 0
+- Blocks: 2            Seconds: 4
+   > Blocks: 2            Seconds: 4
+   > contract address:    0x9eD9022B3Fb1355EE582b63b3A15CBCFeC89288e
+   > block number:        34090599
+   > block timestamp:     1680897241
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.04910198090038905
+   > gas used:            1072177 (0x105c31)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.002680442516082655 ETH
+
+MaticW2RPairToken address:  0x9eD9022B3Fb1355EE582b63b3A15CBCFeC89288e
+
+   Deploying 'MaticW2Rdex'
+   -----------------------
+   > transaction hash:    0x7ab0d33e186545b3aa30a963d200d097dd204e636c4a67ed992efa243d225a82
+- Blocks: 0            Seconds: 0
+- Blocks: 2            Seconds: 4
+   > Blocks: 2            Seconds: 4
+   > contract address:    0x39aab4029b3468fB51B33d2f5eAae04E197C6060
+   > block number:        34090606
+   > block timestamp:     1680897255
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.04259178586132788
+   > gas used:            2604078 (0x27bc2e)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00651019503906117 ETH
+
+MaticW2Rdex address set as authorized Minter and Burner in LP token
+DEX address set in VaultW2R contract
+
+   Deploying 'TwoWheels2RentLender'
+   --------------------------------
+   > transaction hash:    0x65b2975965fcb04058777d9462bb56158b01e3f7ee5c9b01ff1ed3961ff5c3dc
+- Blocks: 0            Seconds: 0
+- Blocks: 3            Seconds: 4
+   > Blocks: 3            Seconds: 4
+   > contract address:    0xdAA0a89f4592b4fF1DE2dE2c4e7BdD4A165C5275
+   > block number:        34090630
+   > block timestamp:     1680897307
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.03704011082801783
+   > gas used:            2122022 (0x206126)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00530505503183033 ETH
+
+TwoWheels2RentLender address:  0xdAA0a89f4592b4fF1DE2dE2c4e7BdD4A165C5275
+
+   Deploying 'TwoWheels2RentRenter'
+   --------------------------------
+   > transaction hash:    0xc8ca61d42a4de3ad0ab14a7f85aa113db35437fc40c8c25a3e8804eab1866ad6
+- Blocks: 0            Seconds: 0
+- Blocks: 2            Seconds: 4
+   > Blocks: 2            Seconds: 4
+   > contract address:    0xB5c2B9b4129155b4aC280f800F840c040154a713
+   > block number:        34090637
+   > block timestamp:     1680897321
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.03184444079684381
+   > gas used:            2078268 (0x1fb63c)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00519567003117402 ETH
+
+TwoWheels2RentRenter address:  0xB5c2B9b4129155b4aC280f800F840c040154a713
+
+   Deploying 'LenderWhitelist'
+   ---------------------------
+   > transaction hash:    0xb8a1e9e70ab4625dc1c12bb69f6c470c94908468e3dd1dd7deb2b9233a7cc505
+- Blocks: 0            Seconds: 0
+- Blocks: 2            Seconds: 4
+   > Blocks: 2            Seconds: 4
+   > contract address:    0xB96802111Cb8151b8Ef1729E61234D2496A4C522
+   > block number:        34090643
+   > block timestamp:     1680897335
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.018481138216663995
+   > gas used:            5345321 (0x519029)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.013363302580179815 ETH
+
+
+   Deploying 'RenterWhitelist'
+   ---------------------------
+   > transaction hash:    0xeb44dc7c4e11b962c46a33a4cf9a15784bdb3a3a578a0360b364d612662c31d2
+- Blocks: 0            Seconds: 0
+- Blocks: 2            Seconds: 4
+- Blocks: 4            Seconds: 8
+   > Blocks: 4            Seconds: 8
+   > contract address:    0x70787eec93C2cc878E472F1DdE4Dee10750713D9
+   > block number:        34090650
+   > block timestamp:     1680897349
+   > account:             0x40de1371A84C9F852d8e12a15A4A6aFb8a6a2f5b
+   > balance:             1.00523547063718999
+   > gas used:            5298267 (0x50d85b)
+   > gas price:           2.500000015 gwei
+   > value sent:          0 ETH
+   > total cost:          0.013245667579474005 ETH
+
+LenderWhitelist address:  0xB96802111Cb8151b8Ef1729E61234D2496A4C522
+RenterWhitelist address:  0x70787eec93C2cc878E472F1DdE4Dee10750713D9
+RenterWhitelist address set in LenderWhitelist contract
+LenderWhitelist address set in RenterWhitelist contract
+LenderWhitelist address set in TwoWheels2RentLender NFT contract
+IPFS hash set in TwoWheels2RentLender NFT contract
+RenterWhitelist address set in TwoWheels2RentRenter NFT contract
+IPFS hash set in TwoWheels2RentRenter NFT contract
+LenderWhitelist address set in VaultW2R contract
+RenterWhitelist address set in VaultW2R contract
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:     0.051174327807045965 ETH
+
+Summary
+=======
+> Total deployments:   8
+> Final cost:          0.051174327807045965 ETH
+
+

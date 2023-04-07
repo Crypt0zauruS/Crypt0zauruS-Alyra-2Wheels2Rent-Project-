@@ -258,7 +258,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                           </tr>
                           <tr>
                             <th scope="row">Total</th>
-                            <td>{rental.total} W2R</td>
+                            <td>{rental.price + rental.deposit} W2R</td>
                           </tr>
                           <tr>
                             <th scope="row">Récompense</th>
@@ -280,12 +280,20 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                                 </button>
                               </td>
                             )}
-                            {rental.cantCancel ? (
+
+                            {rental.isReturned && <td>Velo retourné</td>}
+                          </tr>
+                          {rental.cantCancel ? (
+                            <tr>
+                              {" "}
                               <td>
                                 {!rental.seemsReturned &&
                                   "Annulation impossible"}
                               </td>
-                            ) : (
+                            </tr>
+                          ) : (
+                            <tr>
+                              {" "}
                               <td>
                                 Annulation possible
                                 <button
@@ -295,24 +303,24 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                                   Annuler
                                 </button>
                                 <br />
-                                Avant de confirmer, assurez-vous d&apos;avoir
-                                convenu avec votre locataire de la date et
-                                l&apos;heure de retour vers le{" "}
-                                <span style={{ color: "red" }}>
-                                  {formatDate(rental.date + rental.duration)}
-                                </span>
-                                .
+                                <p className="text-center">
+                                  Avant de confirmer, assurez-vous d&apos;avoir
+                                  convenu avec votre locataire de la date et
+                                  l&apos;heure de retour vers le{" "}
+                                  <span style={{ color: "red" }}>
+                                    {formatDate(rental.date + rental.duration)}.
+                                  </span>
+                                </p>
                                 <button
-                                  className="btn btn-success m-2"
+                                  className="btn btn-success"
                                   onClick={handleConfirmBikeTaken}
+                                  style={{ margin: "0 auto", display: "block" }}
                                 >
                                   Confirmer La location
                                 </button>
                               </td>
-                            )}
-
-                            {rental.isReturned && <td>Velo retourné</td>}
-                          </tr>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     ) : (

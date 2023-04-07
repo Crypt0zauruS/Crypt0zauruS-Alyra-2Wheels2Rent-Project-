@@ -270,7 +270,7 @@ contract BikeShare is Utilities {
         string calldata _latitude,
         string calldata _longitude
     ) external isActivated checkRenterNFT(_bikeRentOwner) {
-        require(deleteOldProposals(), "not deleted");
+        // require(deleteOldProposals());
         for (uint i = 0; i < proposals.length; i++) {
             if (proposals[i]._renter == msg.sender) {
                 revert("Already proposed");
@@ -331,7 +331,13 @@ contract BikeShare is Utilities {
         return rentals[renter].length;
     }
 
-    function deleteOldProposals() private returns (bool) {
+    // order come from front-end when user open the proposal page
+    function deleteOldProposals()
+        external
+        isActivated
+        onlyOwner
+        returns (bool)
+    {
         uint i = 0;
         while (i < proposals.length) {
             if (block.timestamp - proposals[i].date > proposalDuration) {
@@ -359,7 +365,12 @@ contract BikeShare is Utilities {
     ) external isActivated onlyOwner {
         require(!isRented, "Already rented");
         require(_meetingHour > 0);
-        require(_bikeRent != address(0));
+        require(
+            _bikeRent != address(0) &&
+                _bikeRent != owner &&
+                _bikeRent != address(this),
+            "Invalid address"
+        );
         require(proposals.length > 0, "No proposals");
         require(
             bytes(_latitude).length > 0 && bytes(_longitude).length > 0,
@@ -372,6 +383,11 @@ contract BikeShare is Utilities {
         for (i = 0; i < proposals.length; i++) {
             if (proposals[i]._renter == _bikeRent) {
                 Proposal memory proposalLoop = proposals[i];
+                require(
+                    _meetingHour >= proposalLoop._rentalDateMin && // date de RDV minimum
+                        _meetingHour <= proposalLoop._rentalDateMax,
+                    "invalid hour" // date de RDV maximum
+                );
                 uint rentalPrice = (proposalLoop._rentalTime / 86400) *
                     proposalLoop._rate;
                 dateMax = proposalLoop._rentalDateMax;
@@ -444,7 +460,12 @@ contract BikeShare is Utilities {
     }
 
     function cancelProposal(address _bikerent) public isActivated onlyOwner {
-        require(_bikerent != address(0));
+        require(
+            _bikerent != address(0) &&
+                _bikerent != owner &&
+                _bikerent != address(this),
+            "Invalid address"
+        );
         require(proposals.length > 0, "No proposals");
         uint i = 0;
         while (i < proposals.length) {
@@ -463,7 +484,7 @@ contract BikeShare is Utilities {
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
         ];
-        // deactivated for testing
+        // DEACTIVATED FOR TESTING AND DEMO PURPOSES
         //require(rental.date <= block.timestamp, "Must be in the past");
         require(rental.cantCancel == false, "already taken");
         rental.cantCancel = true;

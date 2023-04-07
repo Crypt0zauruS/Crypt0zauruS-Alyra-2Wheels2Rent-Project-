@@ -92,7 +92,7 @@ contract BikeRent is Utilities {
     );
 
     event RentalDeclaredAsReturned(
-        address indexed lenter,
+        address indexed lender,
         uint date,
         address indexed renter,
         string latitude,
@@ -108,7 +108,7 @@ contract BikeRent is Utilities {
     );
 
     event BikeTaken(
-        address indexed lenter,
+        address indexed lender,
         uint date,
         address indexed renter,
         string latitude,
@@ -253,7 +253,13 @@ contract BikeRent is Utilities {
         uint _dateMax, // date de la location souhaitée, heure de RDV maximum
         uint _rentalTime // durée de la location
     ) public isActivated onlyOwner rateLimited(userProposalCalls) {
-        require(deleteOldProposals(), "No old proposals");
+        require(
+            _bikeShareContract != address(0) &&
+                _bikeShareContract != owner &&
+                _bikeShareContract != address(this),
+            "Invalid address"
+        );
+        require(deleteOldProposals());
         for (uint i = 0; i < proposalsMade.length; i++) {
             if (proposalsMade[i].lender == _bikeShareContract) {
                 revert("Proposal already made");
@@ -265,7 +271,6 @@ contract BikeRent is Utilities {
         );
         require(_dateMin > block.timestamp + 10000, "Date too soon");
         require(_rentalTime >= minimalRental, "Time too short");
-        require(_bikeShareContract != address(0));
         require(_dateMax - _dateMin >= 3 hours, "Too short");
         require(_dateMax - _dateMin <= 12 hours, "Too long");
         require(proposalsMade.length < 3, "Only 3 proposals");
@@ -397,7 +402,7 @@ contract BikeRent is Utilities {
                 W2R.safeTransfer(msg.sender, _amountRequired);
                 emit RentalStarted(
                     msg.sender,
-                    proposal.date,
+                    rentalDate,
                     proposal.rentalTime,
                     rentalPrice,
                     depositAmount,
@@ -441,7 +446,12 @@ contract BikeRent is Utilities {
     function cancelProposal(
         address _bikeShareContract
     ) public isActivated onlyOwner {
-        require(_bikeShareContract != address(0));
+        require(
+            _bikeShareContract != address(0) &&
+                _bikeShareContract != owner &&
+                _bikeShareContract != address(this),
+            "Invalid address"
+        );
         require(proposalsMade.length > 0, "No proposals");
         uint i = 0;
         while (i < proposalsMade.length) {
