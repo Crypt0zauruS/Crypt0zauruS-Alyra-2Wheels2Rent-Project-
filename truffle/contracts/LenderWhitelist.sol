@@ -8,6 +8,10 @@ import "../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import "./BikeShare.sol";
 
+/**
+@dev This interface is used to interact with the Vault contract.
+ */
+
 interface IVaultW2R {
     function setApprovedContract(address contractAddress, bool status) external;
 
@@ -15,6 +19,10 @@ interface IVaultW2R {
         address contractAddress
     ) external returns (bool);
 }
+
+/**
+@dev This interface is used to interact with the TwoWheels2RentLender contract.
+ */
 
 interface I1TwoWheels2RentLender {
     struct BikeInfo {
@@ -35,6 +43,16 @@ interface I1TwoWheels2RentLender {
 
     function burnNFT(uint tokenId) external returns (bool);
 }
+
+/**
+
+@title LenderWhitelist
+@notice LenderWhitelist is a contract for managing a whitelist of approved lenders for the TwoWheels2Rent platform. 
+It allows lenders to register their bikes, mint NFTs representing their bikes, and deploy BikeShare contracts.
+@dev This contract is responsible for maintaining the whitelist of lenders, handling the creation of BikeShare contracts, 
+and interacting with the TwoWheels2RentLender, W2R token, and RenterWhitelist contracts. 
+It also manages the lender blacklist.
+*/
 
 contract LenderWhitelist is Ownable {
     // keep track of the number of whitelisted addresses
@@ -73,7 +91,13 @@ contract LenderWhitelist is Ownable {
     event LenderRemovedFromBlacklist(address indexed lender);
     event LenderRemovedFromWhitelist(address indexed lender, uint NFTId);
 
-    // constructor with the address of the TwoWheels2RentLender contract and the W2R token contract
+    /**
+     * @notice Constructor that initializes the contract with the TwoWheels2RentLender, W2R token, Renter NFT contract, and VaultW2R contract addresses.
+     * @param _TW2RL The address of the TwoWheels2RentLender contract.
+     * @param _W2R The address of the W2R token contract.
+     * @param _TW2RRenterNFT The address of the Renter NFT contract.
+     * @param _vaultW2R The address of the VaultW2R contract.
+     */
     constructor(
         address _TW2RL,
         address _W2R,
@@ -93,7 +117,10 @@ contract LenderWhitelist is Ownable {
         TW2RRenterNFT = _TW2RRenterNFT;
     }
 
-    // set RenterWhitelist contract address
+     /**
+     * @notice Sets the RenterWhitelist contract address.
+     * @param _renterWhitelist The address of the RenterWhitelist contract.
+     */
     function setRenterWhitelistAddress(
         address _renterWhitelist
     ) external onlyOwner {
@@ -102,7 +129,14 @@ contract LenderWhitelist is Ownable {
         renterWhitelist = _renterWhitelist;
     }
 
-    // add to whitelist, set BikeInfo struct and call mintNFT
+    /**
+    @notice Whitelists a lender, sets bike information, and mints a new NFT representing the bike.
+    @param name The name of the bike.
+    @param brand The brand of the bike.
+    @param model The model of the bike.
+    @param serial The serial number of the bike.
+    @param registration The registration number of the bike.
+    */
     function setBikeInfoAndMint(
         string memory name,
         string memory brand,
@@ -158,6 +192,10 @@ contract LenderWhitelist is Ownable {
         );
     }
 
+    /**
+    @notice Deploys a new BikeShare contract for the lender.
+    */
+
     function deployBikeShareContract() private {
         require(!blacklistedAddresses[msg.sender], "blacklisted");
         require(
@@ -190,6 +228,10 @@ contract LenderWhitelist is Ownable {
         vaultW2R.setApprovedContract(address(bikeShare), true);
     }
 
+    /**
+    @notice Removes a lender from the whitelist, burns their NFT, and destroys their BikeShare contract.
+    */
+
     function removeAddressFromWhitelist() external {
         require(!blacklistedAddresses[msg.sender], "blacklisted");
         // msg.sender is the address of the caller of this function
@@ -204,6 +246,11 @@ contract LenderWhitelist is Ownable {
             whitelistedAddresses[msg.sender].NFTId
         );
     }
+
+    /**
+    @notice Adds a lender's address to the blacklist.
+    @param _address The address of the lender to be blacklisted.
+    */
 
     function addToBlacklist(address _address) external onlyOwner {
         require(!blacklistedAddresses[_address], "blacklisted");
@@ -220,6 +267,11 @@ contract LenderWhitelist is Ownable {
         }
     }
 
+    /**
+    @notice Removes a lender's address from the blacklist.
+    @param _address The address of the lender to be removed from the blacklist.
+    */
+
     function removeFromBlacklist(address _address) external onlyOwner {
         require(blacklistedAddresses[_address], "Not blacklisted");
         // remove address from blacklist
@@ -227,6 +279,12 @@ contract LenderWhitelist is Ownable {
         // emit event
         emit LenderRemovedFromBlacklist(_address);
     }
+
+    /**
+    @notice Helper function that handles the removal of a lender from the whitelist and performs necessary actions like burning their NFT and destroying their BikeShare contract.
+    @param _address The address of the lender to be removed.
+    @return true if the operation is successful, false otherwise.
+    */
 
     function doRemoveStuff(address _address) private returns (bool) {
         // burn NFT
@@ -246,6 +304,10 @@ contract LenderWhitelist is Ownable {
         numAddressesWhitelisted--;
         return true;
     }
+
+    /**
+    @notice Disallows renouncing ownership of the contract.
+    */
 
     function renounceOwnership() public view override onlyOwner {
         revert("cannot be renounced");

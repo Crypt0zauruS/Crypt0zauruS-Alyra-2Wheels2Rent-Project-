@@ -1,5 +1,6 @@
 {
   "name": "truffle-2wheels2rent-project",
+  "author": "Crypt0zauruS",
   "version": "1.0.0",
   "description": "Truffle project 2wheels2rent contracts",
   "scripts": {

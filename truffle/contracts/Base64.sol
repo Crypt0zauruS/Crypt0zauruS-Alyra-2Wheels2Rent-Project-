@@ -13,6 +13,9 @@ library Base64 {
         hex"00000102030405060708090a0b0c0d0e0f101112131415161718190000000000"
         hex"001a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132330000000000";
 
+    /// @notice Encodes a byte array into a base64 string
+    /// @param data The byte array to encode
+    /// @return The base64 encoded string
     function encode(bytes memory data) internal pure returns (string memory) {
         if (data.length == 0) return "";
 
@@ -82,6 +85,9 @@ library Base64 {
         return result;
     }
 
+    /// @notice Decodes a base64 string into a byte array
+    /// @param _data The base64 string to decode
+    /// @return The decoded byte array
     function decode(string memory _data) internal pure returns (bytes memory) {
         bytes memory data = bytes(_data);
 

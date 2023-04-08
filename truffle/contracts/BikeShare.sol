@@ -6,9 +6,19 @@ pragma solidity ^0.8.17;
 import "../node_modules/@openzeppelin/contracts/interfaces/IERC721.sol";
 import "./Utilities.sol";
 
+/**
+@title I3VaultW2R Interface
+@notice This is the interface of the VaultW2R contract that handles distribution of W2R tokens.
+*/
+
 interface I3VaultW2R {
     function distributeW2R(address receiver, uint256 amount) external;
 }
+
+/**
+@title IrenterWhitelist Interface
+@notice This is the interface of the renters whitelist contract that manages the renter whitelist.
+*/
 
 interface IrenterWhitelist {
     struct Renter {
@@ -21,6 +31,11 @@ interface IrenterWhitelist {
         address
     ) external view returns (Renter memory);
 }
+
+/**
+@title IBikeRent Interface
+@notice This interface is used to communicate with the BikeRent contract.
+*/
 
 interface IBikeRent {
     function rentBike(
@@ -42,15 +57,22 @@ interface IBikeRent {
     function confirmBikeInHands(address _bikeShareOwner) external;
 }
 
+/**
+@title BikeShare Contract
+@notice This contract manages bike rentals and related operations.
+@dev This contract inherits from Utilities and manages bike rentals.
+@dev It uses SafeERC20 for ERC20 operations and contains multiple events for various 
+*/
+
 contract BikeShare is Utilities {
     using SafeERC20 for IERC20;
     address whitelistLender;
     address renterNFT;
     address whitelistRenter;
-    uint public rate; // Prix de location par jour
-    uint public depositAmount; // Montant de la caution
-    uint public maximumRental; // Durée maximale de location, PEUT ETRE RENSEIGNÉE
-    bool public isRented; // Vélo loué ou non
+    uint public rate;
+    uint public depositAmount;
+    uint public maximumRental;
+    bool public isRented;
 
     event BikeRented(
         address indexed renter,
@@ -80,14 +102,14 @@ contract BikeShare is Utilities {
     );
 
     event ProposalReceived(
-        address indexed renter, // address du contrat locataire
-        uint date, // date de la proposition
-        address indexed lender, // address du contrat propriétaire
-        uint rentalDateMin, // date de la location souhaitée
-        uint rentalDateMax, // date de la location souhaitée
-        uint rentalTime, // durée de la location souhaitée
-        uint rate, // taux de location au moment de la proposition
-        uint depositAmount, // taux de dépôt au moment de la proposition
+        address indexed renter,
+        uint date,
+        address indexed lender,
+        uint rentalDateMin,
+        uint rentalDateMax,
+        uint rentalTime,
+        uint rate,
+        uint depositAmount,
         string latitude,
         string longitude
     );
@@ -107,39 +129,36 @@ contract BikeShare is Utilities {
     );
 
     struct Proposal {
-        // time of the proposal
-        uint date; // date de la proposition
-        address _renter; // address of the renter
-        uint _rentalDateMin; // date de la location, heure de RDV minimum
-        uint _rentalDateMax; // date de la location, heure de RDV maximum
-        uint _rentalTime; // durée de la location
-        uint _rate; // prix de la location par jour
-        uint _depositAmount; // montant de la caution
-        bool _isAccepted; // proposition acceptée ou non
+        uint date;
+        address _renter;
+        uint _rentalDateMin;
+        uint _rentalDateMax;
+        uint _rentalTime;
+        uint _rate;
+        uint _depositAmount;
+        bool _isAccepted;
     }
 
     Proposal[] public proposals;
 
     struct Rental {
-        uint date; // date de la location
-        uint rentalTime; // durée de la location
-        uint rentalPrice; // prix de la location
-        uint depositAmount; // montant de la caution
-        uint rewardExpected; // récompense
-        uint amountAsked; // montant demandé
-        bool isAccepted; // location acceptée ou non
-        bool isRefunded; // montant remboursé ou non
-        bool seemsReturned; // location déclarée rendue ou non
-        bool cantCancel; // impossible de cancel la location
-        bool isReturned; // location rendue ou non
+        uint date;
+        uint rentalTime;
+        uint rentalPrice;
+        uint depositAmount;
+        uint rewardExpected;
+        uint amountAsked;
+        bool isAccepted;
+        bool isRefunded;
+        bool seemsReturned;
+        bool cantCancel;
+        bool isReturned;
     }
 
-    // import VaultW2R interface
     I3VaultW2R private vaultW2R;
 
     IBikeRent bikeRent;
 
-    // instantiate IrenterWhitelist interface
     IrenterWhitelist private RenterWhitelist;
 
     struct RentalGPS {
@@ -152,6 +171,16 @@ contract BikeShare is Utilities {
     // mapping of rentals, address of the renter is the key
     mapping(address => Rental[]) public rentals;
     address public currentRenter;
+
+    /**
+    @dev Contract constructor that sets initial values.
+    @param _lender The address of the lender.
+    @param _W2Rtoken The address of the W2R token.
+    @param _renterNFT The address of the renter NFT.
+    @param _whitelistLender The address of the whitelist lenders contract
+    @param _vaultW2R The address of the W2R token vault.
+    @param _whitelistRenter The address of the whitelist renters contract
+    */
 
     constructor(
         address _lender,
@@ -178,7 +207,11 @@ contract BikeShare is Utilities {
         depositAmount = 200000000000000000000; // 200 W2R
     }
 
-    // modifier to check if a renter has the NFT
+    /**
+    @dev Modifier to check if a renter has the NFT.
+    @param _bikeRentOwner The address of the renter contract owner.
+    */
+
     modifier checkRenterNFT(address _bikeRentOwner) {
         require(IERC721(renterNFT).balanceOf(_bikeRentOwner) > 0, "No NFT");
         RenterWhitelist = IrenterWhitelist(whitelistRenter);
@@ -195,6 +228,10 @@ contract BikeShare is Utilities {
         _;
     }
 
+    /**
+    @dev Modifier for checking if the bike is currently rented.
+    */
+
     modifier lending() {
         require(isRented, "Not rented");
         require(currentRenter != address(0), "No lender");
@@ -206,12 +243,23 @@ contract BikeShare is Utilities {
         _;
     }
 
+    /**
+    @notice Allows the owner to set the rental rate.
+    @dev Can only be called by the owner.
+    @param _rate The new rental rate in W2R tokens per day of rental
+    */
+
     function setRate(uint _rate) external onlyOwner {
         require(_rate > 0);
         rate = _rate;
     }
 
-    // fonction pour fixer le taux de la caution
+    /**
+    @notice Allows the owner to set the deposit amount.
+    @dev Can only be called by the owner.
+    @param _depositAmount The new deposit amount.
+    */
+
     function setDepositAmount(
         uint _depositAmount
     ) external isActivated onlyOwner {
@@ -219,7 +267,12 @@ contract BikeShare is Utilities {
         depositAmount = _depositAmount;
     }
 
-    // fonction pour fixer la durée maximale de location
+    /**
+    @notice Allows the owner to set the maximum rental duration in days
+    @dev Can only be called by the owner.
+    @param _maximumRental The new maximum rental duration.
+    */
+
     function setMaximumRental(
         uint _maximumRental
     ) external isActivated onlyOwner {
@@ -227,17 +280,30 @@ contract BikeShare is Utilities {
         maximumRental = _maximumRental;
     }
 
+    /**
+    @notice Returns the number of rentals for a given renter address.
+    @param renter The address of the renter.
+    @return The number of rentals.
+    */
+
     function getRentalsByAdresses(address renter) external view returns (uint) {
         return rentals[renter].length;
     }
 
-    // fonction pour renseigner les détails de la location
+    /**
+    @dev Private helper function to set rental details.
+    @param _date The date of the rental.
+    @param _renter The address of the renter contract.
+    @param _rentalTime The duration of the rental.
+    @param _rentalPrice The price of the rental.
+    @param _depositAmount The deposit amount for the rental.
+    */
     function setRentalStruct(
-        uint _date, // date de la location
-        address _renter, // address du contrat locataire
-        uint _rentalTime, // durée de la location
-        uint _rentalPrice, // prix de la location
-        uint _depositAmount // montant de la caution
+        uint _date,
+        address _renter,
+        uint _rentalTime,
+        uint _rentalPrice,
+        uint _depositAmount
     ) private isActivated {
         require((_rentalPrice * rewardAmount * 100) >= 10000);
         uint reward = (_rentalPrice * rewardAmount * 100) / 10000;
@@ -259,14 +325,27 @@ contract BikeShare is Utilities {
         );
     }
 
-    // fonction pour proposer une location appelée par le contrat locataire
+    /**
+    @notice Allows a renter to submit a rental proposal.
+    @dev Can only be called by a whitelisted renter with an NFT.
+    @dev function called by the BikeRent contract.
+    @param _bikeRentOwner The address of the renter contract owner.
+    @param _dateMin The minimum desired rental meeting time.
+    @param _dateMax The maximum desired rental meeting time.
+    @param _rentalTime The desired rental duration.
+    @param _rate The proposed rental rate.
+    @param _depositAmount The proposed deposit amount.
+    @param date The date of the proposal.
+    @param _latitude The latitude for the rental location.
+    @param _longitude The longitude for the rental location.
+    */
     function setProposal(
         address _bikeRentOwner,
-        uint _dateMin, // date de la location souhaitée, heure de RDV minimum
-        uint _dateMax, // date de la location souhaitée, heure de RDV maximum
-        uint _rentalTime, // durée de la location proposée
-        uint _rate, // taux de la location au moment de la proposition
-        uint _depositAmount, // caution au moment de la proposition
+        uint _dateMin,
+        uint _dateMax,
+        uint _rentalTime,
+        uint _rate,
+        uint _depositAmount,
         uint date,
         string calldata _latitude,
         string calldata _longitude
@@ -300,39 +379,53 @@ contract BikeShare is Utilities {
         );
 
         Proposal memory proposal = Proposal(
-            date, // date de réception de la proposition
-            msg.sender, // address du contrat renter
-            _dateMin, // date de la location souhaitée, heure de RDV minimum
-            _dateMax, // date de la location souhaitée, heure de RDV maximum
-            _rentalTime, // durée de la location souhaitée
-            _rate, // taux de la location au moment de la proposition
-            _depositAmount, // taux de la caution au moment de la proposition
-            false // proposition acceptée ou non
+            date,
+            msg.sender,
+            _dateMin,
+            _dateMax,
+            _rentalTime,
+            _rate,
+            _depositAmount,
+            false
         );
         proposals.push(proposal);
         emit ProposalReceived(
-            msg.sender, // address du contrat locataire
-            date, // date de la proposition
-            address(this), // address du contrat propriétaire
-            _dateMin, // date de la location souhaitée
-            _dateMax, // date de la location souhaitée
-            _rentalTime, // durée de la location souhaitée
-            _rate, // taux de location au moment de la proposition
-            _depositAmount, // taux de dépôt au moment de la proposition
+            msg.sender,
+            date,
+            address(this),
+            _dateMin,
+            _dateMax,
+            _rentalTime,
+            _rate,
+            _depositAmount,
             _latitude,
             _longitude
         );
     }
 
+    /**
+     * @notice Returns the length of the proposals array.
+     * @return The length of the proposals array.
+     */
+
     function getProposalsLength() external view returns (uint) {
         return proposals.length;
     }
+
+    /**
+     * @notice Returns the length of the rentals array for a specific renter.
+     * @param renter The address of the renter.
+     * @return The length of the rentals array for the specified renter.
+     */
 
     function getRentalsLength(address renter) external view returns (uint) {
         return rentals[renter].length;
     }
 
-    // order come from front-end when user open the proposal page
+    /**
+     * @notice Deletes old proposals that are no longer valid.
+     * @return A boolean value indicating the success of the operation.
+     */
     function deleteOldProposals()
         external
         isActivated
@@ -356,8 +449,15 @@ contract BikeShare is Utilities {
         return true;
     }
 
-    // inform bikeRent contract that the proposal has been accepted
-    // GPS coordinates come from front-end
+    /**
+     * @notice Accepts a proposal and initiates the bike rental process.
+     * @dev Call the rentBike function of the BikeRent contract to initiate the rental process and delete others proposals.
+     * in the same time of the rental
+     * @param _bikeRent The address of the BikeRent contract.
+     * @param _meetingHour The meeting hour for the rental.
+     * @param _latitude The latitude of the meeting point.
+     * @param _longitude The longitude of the meeting point.
+     */
     function acceptProposal(
         address _bikeRent,
         uint _meetingHour,
@@ -385,9 +485,9 @@ contract BikeShare is Utilities {
             if (proposals[i]._renter == _bikeRent) {
                 Proposal memory proposalLoop = proposals[i];
                 require(
-                    _meetingHour >= proposalLoop._rentalDateMin && // date de RDV minimum
+                    _meetingHour >= proposalLoop._rentalDateMin &&
                         _meetingHour <= proposalLoop._rentalDateMax,
-                    "invalid hour" // date de RDV maximum
+                    "invalid hour"
                 );
                 uint rentalPrice = (proposalLoop._rentalTime / 86400) *
                     proposalLoop._rate;
@@ -402,32 +502,31 @@ contract BikeShare is Utilities {
                 );
                 uint meetingHour = _meetingHour;
                 setRentalStruct(
-                    meetingHour, // date et heure de la location
-                    proposalLoop._renter, // address du contrat locataire
-                    rentalTime, // durée de la location
-                    rentalPrice, // prix de la location
-                    proposalLoop._depositAmount // montant de la caution
+                    meetingHour,
+                    proposalLoop._renter,
+                    rentalTime,
+                    rentalPrice,
+                    proposalLoop._depositAmount
                 );
                 bikeRent.rentBike(
-                    owner, // address du propriétaire
-                    rentalPrice, // prix de la location
-                    proposalLoop._depositAmount, // montant de la caution
-                    rentalTime, // durée de la location
-                    meetingHour // date de la location
+                    owner,
+                    rentalPrice,
+                    proposalLoop._depositAmount,
+                    rentalTime,
+                    meetingHour
                 );
-                // set bike as rented if no revert
                 proposalLoop._isAccepted = true;
                 isRented = true;
                 currentRenter = proposalLoop._renter;
                 rentalGPSData[currentRenter] = RentalGPS(_latitude, _longitude);
                 totalRentals++;
                 emit BikeRented(
-                    proposalLoop._renter, // address du contrat locataire
-                    rentalTime, // durée de la location
-                    _meetingHour, // date de la location
-                    proposalLoop._rate, // taux de la location
-                    proposalLoop._depositAmount, // montant de la caution
-                    rentalPrice // prix de la location
+                    proposalLoop._renter,
+                    rentalTime,
+                    _meetingHour,
+                    proposalLoop._rate,
+                    proposalLoop._depositAmount,
+                    rentalPrice
                 );
                 proposalFound = true;
                 break;
@@ -451,6 +550,12 @@ contract BikeShare is Utilities {
         }
     }
 
+    /**
+     * @notice Cancels a proposal with a specific index.
+     * @dev helper function
+     * @param index The index of the proposal to cancel.
+     * @return A boolean value indicating the success of the operation.
+     */
     function cancelUselessProposals(uint index) private returns (bool) {
         address renter = proposals[index]._renter;
         uint256 date = proposals[index].date;
@@ -459,6 +564,11 @@ contract BikeShare is Utilities {
         emit ProposalCancelled(renter, date, address(this));
         return true;
     }
+
+    /**
+     * @notice Cancels a proposal with a specific bike rent contract address.
+     * @param _bikerent The address of the BikeRent contract.
+     */
 
     function cancelProposal(address _bikerent) public isActivated onlyOwner {
         require(
@@ -480,7 +590,10 @@ contract BikeShare is Utilities {
         }
     }
 
-    // function to activate when the Renter has physically taken the bike
+    /**
+     * @dev Call the confirmBikeInHands function of the BikeRent contract.
+     * @notice Confirms the bike has been taken by the renter.
+     */
     function confirmBikeTaken() external isActivated onlyOwner lending {
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
@@ -500,8 +613,11 @@ contract BikeShare is Utilities {
         );
     }
 
-    // function called by Renter contract to confirm that the bike has been returned
-    // it is strongly advised that people were physically present at the meeting point
+    /**
+     * @notice Declares the bike has been returned by the renter. People have to be physically present at the meeting point
+     * @dev Called by the BikeRent contract.
+     * @param _bikeRentOwner The address of the bike rent owner.
+     */
     function returnedBike(
         address _bikeRentOwner
     ) external isActivated checkRenterNFT(_bikeRentOwner) lending {
@@ -514,7 +630,10 @@ contract BikeShare is Utilities {
         emit RentalSeemsReturned(msg.sender, block.timestamp, address(this));
     }
 
-    // function to definitely confirm bike returned by renter and return deposit to renter
+    /**
+     * @notice Confirms definitaly the bike has been returned and the deposit is returned to the renter.
+     * @dev Call the returnConfirmed function of the BikeRent contract.
+     */
     function confirmBikeReturned() external isActivated onlyOwner lending {
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
@@ -551,19 +670,27 @@ contract BikeShare is Utilities {
         );
     }
 
-    // function called by lender to cancel lending
+    /**
+     * @notice Cancels the lending process initiated by the lender.
+     */
     function cancelLending() external isActivated lending onlyOwner {
         handleRentingCancellation(false);
     }
 
-    // function called by renter to cancel renting
+    /**
+     * @notice Cancels the renting process initiated by the renter.
+     * @param _bikeRentOwner The address of the bike rent owner.
+     */
     function cancelledRenting(
         address _bikeRentOwner
     ) external isActivated checkRenterNFT(_bikeRentOwner) lending {
         handleRentingCancellation(true);
     }
 
-    // helper function to handle cancellation
+    /**
+     * @notice Handles the cancellation of a renting process.
+     * @dev helper function, call the cancelledLending function of the BikeRent contract if called by this contract
+     */
     function handleRentingCancellation(bool isCalledByRenter) private {
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
@@ -601,6 +728,12 @@ contract BikeShare is Utilities {
         );
     }
 
+    /**
+     * @notice Allows the owner to withdraw funds from the contract.
+     * @dev Prevent withdrawing the deposit amount of the current renter.
+     * @param _amount The amount to be withdrawn.
+     */
+
     function withdrawFunds(uint _amount) external isActivated onlyOwner {
         require(_amount > 0, "Must be greater than 0");
         uint W2Rbalance = W2R.balanceOf(address(this));
@@ -615,7 +748,13 @@ contract BikeShare is Utilities {
         emit W2Rwithdrawed(msg.sender, _amount, block.timestamp, address(this));
     }
 
-    // Fonction pour détruire le contrat et renvoyer les fonds restants à l'owner
+    /**
+     * @notice Destroy the contract, W2R funds are transfered to the owner.
+     * @dev This function is called by the whitelist contract to destroy the contract
+     * not really destroyed as the selfdestruct expected to be used will be deprecated soon
+     * but usable anymore
+     * @return true if the contract is successfully destroyed, false otherwise
+     */
     function destroy() external returns (bool) {
         require(msg.sender == whitelistLender, "Only whitelistContract");
         // if bike is rented and rental duration is not over, revert

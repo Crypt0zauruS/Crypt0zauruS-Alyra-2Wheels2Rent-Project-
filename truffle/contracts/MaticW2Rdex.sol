@@ -10,9 +10,17 @@ import "../node_modules/@openzeppelin/contracts/token/ERC20/extensions/ERC20Burn
 import "../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
+/**
+ * @dev Interface for the W2R Vault contract.
+ */
+
 interface I5VaultW2R {
     function distributeW2R(address receiver, uint amount) external;
 }
+
+/**
+ * @dev Interface for the Matic-W2R LP token contract.
+ */
 
 interface IMaticW2RPairToken is IERC20 {
     function checkMinterAndBurner(
@@ -23,6 +31,11 @@ interface IMaticW2RPairToken is IERC20 {
 
     function burn(uint256 amount) external;
 }
+
+/**
+ * @title MaticW2Rdex
+ * @dev A decentralized exchange for swapping Matic and W2R tokens, providing liquidity and farming.
+ */
 
 contract MaticW2Rdex is Ownable {
     using SafeERC20 for IERC20;
@@ -40,9 +53,8 @@ contract MaticW2Rdex is Ownable {
 
     I5VaultW2R vaultW2R;
 
-    // balance de LP Token sur les Wallets
     mapping(address => uint) public LPBalance;
-    // caractéristiques du farming
+
     mapping(address => Farming) public farming;
 
     struct Farming {
@@ -80,6 +92,14 @@ contract MaticW2Rdex is Ownable {
     event Harvest(address indexed user, uint rewards, uint date);
     event ExitFarm(address indexed user, uint lpAmount, uint date);
 
+    /**
+     * @dev Constructor that initializes the contract with the token addresses, initial swap rate, Vault W2R address, and LP token address.
+     * @param W2RAddress Address of the W2R token contract.
+     * @param initialSwapRate Initial swap rate for Matic to W2R conversion.
+     * @param vaultW2RAddress Address of the Vault W2R contract.
+     * @param lpTokenAddress Address of the LP token contract.
+     */
+
     constructor(
         address W2RAddress,
         uint initialSwapRate,
@@ -101,6 +121,11 @@ contract MaticW2Rdex is Ownable {
         feesPercent = 1;
     }
 
+    /**
+     * @dev Modifier to check the LP token amount ans allowance for the calling user.
+     * @param lpAmount Amount of LP tokens to check.
+     */
+
     modifier checkLPAmount(uint lpAmount) {
         require(lpAmount > 0, "LP amount must be greater than 0");
 
@@ -118,6 +143,11 @@ contract MaticW2Rdex is Ownable {
         _;
     }
 
+    /**
+     * @dev Get the contract balances for W2R, MATIC, and LP tokens.
+     * @return A tuple containing the W2R, MATIC, and LP token balances of the contract.
+     */
+
     function getContractBalances() external view returns (uint, uint, uint) {
         // W2R, MATIC, LP
         return (
@@ -127,15 +157,31 @@ contract MaticW2Rdex is Ownable {
         );
     }
 
+    /**
+     * @dev Get the user balances for W2R and LP tokens.
+     * @return A tuple containing the W2R and LP token balances of the caller.
+     */
+
     function getUserBalances() external view returns (uint, uint) {
         return (W2R.balanceOf(msg.sender), lpToken.balanceOf(msg.sender));
     }
+
+    /**
+     * @dev Check if the given address is authorized as a minter and burner in the LP token contract.
+     * @param _toCheck The address to check for authorization in the LP token contract.
+     * @return A boolean value indicating whether the address is authorized as a minter and burner.
+     */
 
     function checkIfAuthorizedInLPcontract(
         address _toCheck
     ) public view returns (bool) {
         return lpToken.checkMinterAndBurner(_toCheck);
     }
+
+    /**
+     * @dev Swap Matic for W2R tokens. Requires sending Matic along with the transaction.
+     * Emits a SwapMaticForW2R event.
+     */
 
     function swapMaticForW2R() external payable {
         require(msg.value > 0, "must be greater 0");
@@ -157,7 +203,11 @@ contract MaticW2Rdex is Ownable {
         emit SwapMaticForW2R(msg.sender, msg.value, w2rAmount, block.timestamp);
     }
 
-    // entrer un montant incluant les décimales, en wei, pour matic et W2R
+    /**
+     * @dev Swap W2R tokens for Matic tokens.
+     * @param w2rAmount Amount of W2R tokens to swap for Matic tokens.
+     * Emits a SwapW2RForMatic event.
+     */
     function swapW2RForMatic(uint w2rAmount) external {
         bool guard;
         require(!guard, "ReentrancyGuard: reentrant call");
@@ -193,6 +243,13 @@ contract MaticW2Rdex is Ownable {
             block.timestamp
         );
     }
+
+    /**
+     * @dev Add liquidity to the contract.
+     * @param w2rAmount Amount of W2R tokens to add as liquidity.
+     * Requires sending Matic along with the transaction.
+     * Emits an AddLiquidity event.
+     */
 
     function addLiquidity(uint w2rAmount) external payable {
         require(w2rAmount > 0, "W2R amount must be greater than 0");
@@ -242,6 +299,12 @@ contract MaticW2Rdex is Ownable {
         emit AddLiquidity(msg.sender, maticAmount, w2rAmount, lpAmount);
     }
 
+    /**
+     * @dev Remove liquidity from the contract.
+     * @param lpAmount Amount of LP tokens to remove liquidity.
+     * Emits a RemoveLiquidity event.
+     */
+
     function removeLiquidity(uint lpAmount) external checkLPAmount(lpAmount) {
         bool guard;
         require(!guard, "ReentrancyGuard: reentrant call");
@@ -270,6 +333,12 @@ contract MaticW2Rdex is Ownable {
         emit RemoveLiquidity(msg.sender, maticAmount, w2rAmount, lpAmount);
     }
 
+    /**
+     * @dev Farm LP tokens to earn W2R rewards.
+     * @param lpAmount Amount of LP tokens to farm.
+     * Emits a Farm event.
+     */
+
     function farm(uint lpAmount) external checkLPAmount(lpAmount) {
         // check if user has already farmed
         LPBalance[msg.sender] -= lpAmount;
@@ -284,6 +353,11 @@ contract MaticW2Rdex is Ownable {
         emit Farm(msg.sender, lpAmount, block.timestamp);
     }
 
+    /**
+     * @dev Exit farm and claim LP tokens back.
+     * Emits an ExitFarm event.
+     */
+
     function exitFarm() external {
         require(msg.sender != address(0), "Invalid address");
         uint lpBalance = farming[msg.sender].lpAmount;
@@ -295,6 +369,11 @@ contract MaticW2Rdex is Ownable {
         lpToken.safeTransfer(msg.sender, lpBalance);
         emit ExitFarm(msg.sender, lpBalance, block.timestamp);
     }
+
+    /**
+     * @dev View the pending W2R rewards for the user.
+     * @return reward The pending W2R rewards for the user.
+     */
 
     function viewRewards() external view returns (uint) {
         require(msg.sender != address(0), "Invalid address");
@@ -317,6 +396,11 @@ contract MaticW2Rdex is Ownable {
         return reward;
     }
 
+    /**
+     * @dev Claim W2R rewards from farming.
+     * Emits a Harvest event.
+     */
+
     function harvest() public {
         require(msg.sender != address(0), "Invalid address");
         uint lpBalance = farming[msg.sender].lpAmount;
@@ -329,15 +413,30 @@ contract MaticW2Rdex is Ownable {
         emit Harvest(msg.sender, user.rewards, block.timestamp);
     }
 
+    /**
+     * @dev Update the Matic to W2R swap rate.
+     * @param newSwapRate New swap rate for Matic to W2R conversion.
+     */
+
     function setSwapRate(uint newSwapRate) external onlyOwner {
         require(newSwapRate > 0, "Swap rate must be greater than 0");
         swapRate = newSwapRate;
     }
 
+    /**
+     * @dev Set the reward rate for farming.
+     * @param _newRewardRate New reward rate per second.
+     */
+
     function setRewardRate(uint _newRewardRate) external onlyOwner {
         require(_newRewardRate > 0, "Reward rate must be greater than 0");
         rewardRatePerSecond = _newRewardRate;
     }
+
+    /**
+     * @dev Set the security percentage for the contract.
+     * @param _newSecurityPercentage New security percentage (must be greater than 0 and less than or equal to 100).
+     */
 
     function setSecurityPercentage(
         uint _newSecurityPercentage
@@ -349,6 +448,9 @@ contract MaticW2Rdex is Ownable {
         securityPercentage = _newSecurityPercentage;
     }
 
+    /**
+     * @dev Withdraw accumulated fees (W2R and Matic) for the contract owner.
+     */
     function withdrawFees() external onlyOwner {
         require(msg.sender != address(0), "Invalid address");
         bool guard; // even if it's the owner, we don't want reentrancy !
@@ -366,6 +468,10 @@ contract MaticW2Rdex is Ownable {
             require(success, "Failed to withdraw fees");
         }
     }
+
+    /**
+     * @dev Fallback function to receive Matic payments.
+     */
 
     receive() external payable {}
 }
