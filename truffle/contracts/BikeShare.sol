@@ -2,7 +2,8 @@
 pragma solidity ^0.8.17;
 /////////////////////////////////// BikeShare contract ///////////////////////////////////
 
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
+//import "@openzeppelin/contracts/interfaces/IERC721.sol";
+import "../node_modules/@openzeppelin/contracts/interfaces/IERC721.sol";
 import "./Utilities.sol";
 
 interface I3VaultW2R {

@@ -50,6 +50,7 @@ module.exports = async (deployer, network, accounts) => {
       MaticW2RPairTokenInstance.address
     );
     const MaticW2RdexInstance = await MaticW2Rdex.deployed();
+    console.log("MaticW2Rdex address: ", MaticW2RdexInstance.address);
 
     // add DEX as authorized Minter and Burner in LP token
     await MaticW2RPairTokenInstance.addMinterAndBurner(

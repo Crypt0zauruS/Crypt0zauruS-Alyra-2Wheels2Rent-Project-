@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
+//import "@openzeppelin/contracts/interfaces/IERC721.sol";
+import "../node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./Utilities.sol";
 
 interface I4VaultW2R {

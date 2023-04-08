@@ -720,7 +720,7 @@ const Dex = () => {
                 En mettant vos Matic-W2R LP Tokens en farming, vous montrez
                 votre volonté de confier de la liquidité au DEX dans le temps.
                 Vous serez récompensé en W2R !<br />
-                <span style={{ color: "blue" }}>APY: {rewardRate} %</span>
+                {/* <span style={{ color: "blue" }}>APY: {rewardRate} %</span>*/}
               </h3>
             </div>
             <hr />

@@ -85,6 +85,7 @@ MaticW2RPairToken address:  0x9eD9022B3Fb1355EE582b63b3A15CBCFeC89288e
    > value sent:          0 ETH
    > total cost:          0.00651019503906117 ETH
 
+MaticW2Rdex address:   0x39aab4029b3468fB51B33d2f5eAae04E197C6060
 MaticW2Rdex address set as authorized Minter and Burner in LP token
 DEX address set in VaultW2R contract
 
