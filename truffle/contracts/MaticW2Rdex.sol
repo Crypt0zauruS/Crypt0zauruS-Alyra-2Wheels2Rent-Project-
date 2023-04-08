@@ -48,6 +48,7 @@ contract MaticW2Rdex is Ownable {
     struct Farming {
         uint lastTime;
         uint lpAmount;
+        uint rewards;
     }
 
     event SwapMaticForW2R(
@@ -94,7 +95,7 @@ contract MaticW2Rdex is Ownable {
         W2R = IERC20(W2RAddress);
         lpToken = IMaticW2RPairToken(lpTokenAddress);
         swapRate = initialSwapRate;
-        rewardRatePerSecond = 10 ** 10; // w2r reward rate per second at the launch of the dex
+        rewardRatePerSecond = 10 ** 9; // w2r reward rate per second at the launch of the dex
         vaultW2R = I5VaultW2R(vaultW2RAddress);
         securityPercentage = 5;
         feesPercent = 1;
@@ -274,6 +275,9 @@ contract MaticW2Rdex is Ownable {
         LPBalance[msg.sender] -= lpAmount;
         // update farming struct
         Farming storage user = farming[msg.sender];
+        if (user.lpAmount > 0) {
+            user.rewards += calculateReward();
+        }
         user.lpAmount += lpAmount;
         user.lastTime = block.timestamp;
         lpToken.safeTransferFrom(msg.sender, address(this), lpAmount);
@@ -297,8 +301,8 @@ contract MaticW2Rdex is Ownable {
         uint lpBalance = farming[msg.sender].lpAmount;
         uint lastTime = farming[msg.sender].lastTime;
         uint timeElapsed = block.timestamp - lastTime;
-        uint reward = (lpBalance * timeElapsed * rewardRatePerSecond) /
-            10 ** 18;
+        uint reward = ((lpBalance * timeElapsed * rewardRatePerSecond) /
+            10 ** 18) + farming[msg.sender].rewards;
         return reward;
     }
 
@@ -317,12 +321,12 @@ contract MaticW2Rdex is Ownable {
         require(msg.sender != address(0), "Invalid address");
         uint lpBalance = farming[msg.sender].lpAmount;
         require(lpBalance > 0, "No LP tokens to claim rewards");
-        uint reward = calculateReward();
-        require(reward > 0, "No rewards available");
         Farming storage user = farming[msg.sender];
+        uint reward = user.rewards += calculateReward();
         user.lastTime = block.timestamp;
+        user.rewards = 0;
         vaultW2R.distributeW2R(msg.sender, reward);
-        emit Harvest(msg.sender, reward, block.timestamp);
+        emit Harvest(msg.sender, user.rewards, block.timestamp);
     }
 
     function setSwapRate(uint newSwapRate) external onlyOwner {

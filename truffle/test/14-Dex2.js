@@ -16,11 +16,10 @@ contract("MaticW2Rdex", (accounts) => {
   let MaticW2RdexInstance;
   let MaticW2RPairTokenInstance;
   beforeEach(async () => {
-    // Deploy W2R
     W2RInstance = await W2R.new(initialSupply, { from: owner });
     amount = new BN("10000000000000000000000");
     await W2RInstance.transfer(bob, amount, { from: owner });
-    // Deploy VaultW2R
+
     VaultW2RInstance = await VaultW2R.new(W2RInstance.address, {
       from: owner,
     });
@@ -47,11 +46,11 @@ contract("MaticW2Rdex", (accounts) => {
     );
     const transferMatic = web3.utils.toWei("100000", "ether");
     const transferW2R = web3.utils.toWei("1000000", "ether");
-   
+
     await W2RInstance.approve(MaticW2RdexInstance.address, transferW2R, {
       from: owner,
     });
-   
+
     await MaticW2RdexInstance.addLiquidity(transferW2R, {
       from: owner,
       value: transferMatic,
