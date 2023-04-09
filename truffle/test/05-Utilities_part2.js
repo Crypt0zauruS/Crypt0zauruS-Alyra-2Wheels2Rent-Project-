@@ -115,7 +115,7 @@ contract("Utilities", (accounts) => {
   });
 
   describe("Utilities Functions", async () => {
-    it("should be deactivated after initialization", async () => {
+    it("should be deactivated just after deployment", async () => {
       const isDeactivated = await utilities.isDeactivated();
       expect(isDeactivated).to.equal(true);
     });

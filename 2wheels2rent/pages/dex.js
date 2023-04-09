@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ethers, Contract } from "ethers";
 import { useWeb3Context } from "../context/";
+import useAddTokenToMetaMask from "../hooks/useAddTokenToMetamask";
 import W2R from "../contracts/W2R.json";
 import MaticW2Rdex from "../contracts/MaticW2Rdex.json";
 import MaticW2RPairToken from "../contracts/MaticW2RPairToken.json";
@@ -9,9 +10,12 @@ import Footer from "../components/Footer";
 import Loader from "../components/Loader";
 import Image from "next/image";
 import W2Rpicture from "../private/W2R.png";
+import W2Rmini from "../private/W2Rmini.png";
+import LPmini from "../private/LPmini.png";
 
 const Dex = () => {
-  const { web3Provider, address, network } = useWeb3Context();
+  const { web3Provider, address, network, provider } = useWeb3Context();
+  const addToken = useAddTokenToMetaMask();
   const showToast = (message, type = false) => {
     if (!type) {
       toast.success(message, { closeOnClick: true, pauseOnHover: false });
@@ -54,11 +58,16 @@ const Dex = () => {
   const [swapRate, setSwapRate] = useState(0);
   const [rewardRate, setRewardRate] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [w2rToken, setW2RToken] = useState({});
+  const [LPToken, setLPToken] = useState({});
 
   const validateConditions = () => {
     if (!address) return false;
+    if (!web3Provider) return false;
+    if (!network) return false;
     if (!dexAddress) return false;
     if (!W2Rcontract) return false;
+    if (!pairTokenContract) return false;
     return true;
   };
 
@@ -69,7 +78,6 @@ const Dex = () => {
   };
 
   const swapW2RForMatic = async () => {
-    if (!validateConditions()) return;
     if (Number(swapW2RAmount) === 0) return;
     setLoading(true);
     try {
@@ -440,7 +448,7 @@ const Dex = () => {
   };
 
   const fetchBalances = useCallback(async () => {
-    if (!dexContract) return;
+    if (!validateConditions()) return;
     setLoading(true);
     try {
       const MaticUser = await getMaticBalance();
@@ -502,6 +510,31 @@ const Dex = () => {
     }
   };
 
+  const fetchTokenInfo = async () => {
+    if (W2Rcontract && pairTokenContract) {
+      const [w2rSymbol, w2rDecimals, lpSymbol, lpDecimals] = await Promise.all([
+        W2Rcontract.symbol(),
+        W2Rcontract.decimals(),
+        pairTokenContract.symbol(),
+        pairTokenContract.decimals(),
+      ]);
+
+      setW2RToken({
+        tokenAddress: W2Raddress,
+        tokenSymbol: w2rSymbol,
+        tokenDecimals: w2rDecimals,
+        tokenImage: W2Rmini,
+      });
+
+      setLPToken({
+        tokenAddress: pairTokenAddress,
+        tokenSymbol: lpSymbol,
+        tokenDecimals: lpDecimals,
+        tokenImage: LPmini,
+      });
+    }
+  };
+
   useEffect(() => {
     if (address && network) {
       setW2Raddress(W2R.networks[network.chainId]?.address);
@@ -513,34 +546,46 @@ const Dex = () => {
         setPairTokenContract(
           new Contract(pairTokenAddress, pairTokenABI, signer)
         );
+      fetchTokenInfo();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, network, W2Raddress, dexAddress, pairTokenAddress]);
 
+  const refreshData = async () => {
+    if (validateConditions()) {
+      await fetchBalances();
+      await getMaticBalance();
+      await fetchTokenInfo();
+    }
+    if (!address) {
+      setUserBalances({
+        matic: 0,
+        w2r: 0,
+        lpToken: 0,
+      });
+      setContractBalances({
+        matic: 0,
+        w2r: 0,
+        lpToken: 0,
+      });
+      setFarmedLP(0);
+      setRewards(0);
+    }
+  };
+
   useEffect(() => {
-    const refreshData = async () => {
-      if (W2Rcontract && dexContract && pairTokenContract) {
-        await fetchBalances();
-        await getMaticBalance();
-      }
-      if (!address) {
-        setUserBalances({
-          matic: 0,
-          w2r: 0,
-          lpToken: 0,
-        });
-        setContractBalances({
-          matic: 0,
-          w2r: 0,
-          lpToken: 0,
-        });
-        setFarmedLP(0);
-        setRewards(0);
-      }
-    };
     refreshData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, W2Rcontract, dexContract, pairTokenContract]);
+  }, [address, network, W2Rcontract, dexContract, pairTokenContract]);
+
+  useEffect(() => {
+    if (provider) {
+      provider?.on("chainChanged", () => {
+        window.location.reload();
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network]);
 
   return (
     <div className="container dex-container">
@@ -560,13 +605,30 @@ const Dex = () => {
             <div className="col-12">
               <hr />
               {!loading ? (
-                <h2 className="text-center m-4 fs-6">
-                  Pour toutes opérations concernant vos W2R et vos Matic-W2R LP
-                  Tokens, votre wallet vous demandera d&apos;abord
-                  d&apos;approuver le montant que vous avez indiqué pour votre
-                  transaction, avant d&apos;y procéder. Ceci vous garantie le
-                  contrôle et la sécurité de vos fonds
-                </h2>
+                <>
+                  <h2 className="text-center m-4 fs-6">
+                    Pour toutes opérations concernant vos W2R et vos Matic-W2R
+                    LP Tokens, votre wallet vous demandera d&apos;abord
+                    d&apos;approuver le montant que vous avez indiqué pour votre
+                    transaction, avant d&apos;y procéder. Ceci vous garantie le
+                    contrôle et la sécurité de vos fonds
+                  </h2>
+                  {window?.ethereum &&
+                    network.chainId === 80001 &&
+                    w2rToken &&
+                    LPToken &&
+                    provider && (
+                      <div>
+                        {" "}
+                        <button onClick={() => addToken(w2rToken)}>
+                          Ajouter {w2rToken?.tokenSymbol} à MetaMask
+                        </button>
+                        <button onClick={() => addToken(LPToken)}>
+                          Ajouter {LPToken?.tokenSymbol} à MetaMask
+                        </button>
+                      </div>
+                    )}
+                </>
               ) : (
                 <Loader />
               )}

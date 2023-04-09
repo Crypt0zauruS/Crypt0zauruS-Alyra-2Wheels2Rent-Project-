@@ -15,6 +15,8 @@ import BikeRent from "../contracts/BikeRent.json";
 import RenterRentals from "./RenterRentals";
 import LenderRentals from "./LenderRentals";
 import Footer from "./Footer";
+import W2Rmini from "../private/W2Rmini.png";
+import useAddTokenToMetaMask from "../hooks/useAddTokenToMetamask";
 
 const NearbyUsersMap = dynamic(() => import("../components/NearbyUsersMap"), {
   ssr: false,
@@ -82,6 +84,24 @@ const UserDashboard = ({ props }) => {
   const bikeRentAbi = BikeRent.abi;
   const w2rAddress = W2R.networks[network.chainId]?.address;
   const [contract, setContract] = useState(null);
+  const addToken = useAddTokenToMetaMask();
+  const [w2rToken, setW2RToken] = useState({});
+
+  const fetchTokenInfo = async () => {
+    if (w2Rcontract && w2rAddress) {
+      const [w2rSymbol, w2rDecimals] = await Promise.all([
+        w2Rcontract.symbol(),
+        w2Rcontract.decimals(),
+      ]);
+
+      setW2RToken({
+        tokenAddress: w2rAddress,
+        tokenSymbol: w2rSymbol,
+        tokenDecimals: w2rDecimals,
+        tokenImage: W2Rmini,
+      });
+    }
+  };
 
   const getWhitelistedInfos = useCallback(async () => {
     if (!address) return;
@@ -331,6 +351,7 @@ const UserDashboard = ({ props }) => {
       );
       getW2Rbalance();
       getWhitelistedInfos();
+      fetchTokenInfo();
       //handleCheckActivated();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -339,6 +360,7 @@ const UserDashboard = ({ props }) => {
   useEffect(() => {
     if (w2Rcontract) {
       getW2Rbalance();
+      fetchTokenInfo();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [w2Rcontract]);
@@ -354,6 +376,17 @@ const UserDashboard = ({ props }) => {
                   Bienvenue {name} ! <br />
                   W2R sur votre wallet:{" "}
                   <span style={{ fontStyle: "italic" }}>{w2rUserBalance}</span>
+                  {window?.ethereum &&
+                    network.chainId === 80001 &&
+                    w2rToken && (
+                      <button
+                        onClick={() => addToken(w2rToken)}
+                        className="m-3 fs-6"
+                        style={{ borderRadius: "10px" }}
+                      >
+                        Ajouter {w2rToken?.tokenSymbol} à MetaMask
+                      </button>
+                    )}
                 </h2>
                 <hr />
                 <p>

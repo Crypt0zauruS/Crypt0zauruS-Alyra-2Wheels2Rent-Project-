@@ -8,12 +8,6 @@ const RenterWhitelist = artifacts.require("RenterWhitelist.sol");
 const lenderIPFS = "lenderIPFS";
 const renterIPFS = "renterIPFS";
 const { expect } = require("chai");
-const {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-} = require("@openzeppelin/test-helpers");
 
 contract("Whitelist Masters", (accounts) => {
   let TwoWheels2RentLenderInstance;
@@ -152,7 +146,6 @@ contract("Whitelist Masters", (accounts) => {
     });
 
     it("should remove an address from the whitelist", async () => {
-     
       await LenderWhitelistInstance.removeAddressFromWhitelist({
         from: owner,
       });
@@ -166,12 +159,10 @@ contract("Whitelist Masters", (accounts) => {
     });
 
     it("should add an address to the blacklist and verify its addition", async () => {
-    
       await LenderWhitelistInstance.addToBlacklist(owner, {
         from: owner,
       });
 
-    
       const isBlacklisted = await LenderWhitelistInstance.blacklistedAddresses(
         owner,
         { from: owner }
@@ -184,12 +175,11 @@ contract("Whitelist Masters", (accounts) => {
       await LenderWhitelistInstance.addToBlacklist(owner, {
         from: owner,
       });
-      
+
       await LenderWhitelistInstance.removeFromBlacklist(owner, {
         from: owner,
       });
 
-    
       const isBlacklisted = await LenderWhitelistInstance.blacklistedAddresses(
         owner,
         { from: owner }
@@ -199,7 +189,6 @@ contract("Whitelist Masters", (accounts) => {
     });
 
     it("should remove an address from the whitelist", async () => {
-      
       await RenterWhitelistInstance.removeAddressFromWhitelist({
         from: owner,
       });
@@ -213,12 +202,10 @@ contract("Whitelist Masters", (accounts) => {
     });
 
     it("should add an address to the blacklist and verify its addition", async () => {
-   
       await RenterWhitelistInstance.addToBlacklist(owner, {
         from: owner,
       });
 
-  
       const isBlacklisted = await RenterWhitelistInstance.blacklistedAddresses(
         owner,
         { from: owner }
@@ -231,12 +218,11 @@ contract("Whitelist Masters", (accounts) => {
       await RenterWhitelistInstance.addToBlacklist(owner, {
         from: owner,
       });
-    
+
       await RenterWhitelistInstance.removeFromBlacklist(owner, {
         from: owner,
       });
 
-     
       const isBlacklisted = await RenterWhitelistInstance.blacklistedAddresses(
         owner,
         { from: owner }

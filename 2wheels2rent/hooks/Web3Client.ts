@@ -2,6 +2,7 @@ import { useEffect, useReducer, useCallback } from "react";
 import { ethers } from "ethers";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
+// import { useRouter } from "next/router";
 import {
   Web3ProviderState,
   Web3Action,
@@ -35,6 +36,7 @@ if (typeof window !== "undefined") {
 export const useWeb3 = () => {
   const [state, dispatch] = useReducer(web3Reducer, web3InitialState);
   const { provider, web3Provider, address, network, balance } = state;
+  // const router = useRouter();
 
   const connect = useCallback(async () => {
     if (web3Modal) {
@@ -103,10 +105,12 @@ export const useWeb3 = () => {
 
       // https://docs.ethers.io/v5/concepts/best-practices/#best-practices--network-changes
       const handleChainChanged = (_hexChainId: string) => {
+        // const currentPage = router.pathname;
         if (typeof window !== "undefined") {
           console.log("switched to chain...", _hexChainId);
-          alert("Network Switched - Please Reconnect");
+          alert("Changement de réseau Détecté - Veuillez vous reconnecter");
           handleDisconnect({ code: 4900, message: "Network Changed" });
+          // if (currentPage === "/dex") window.location.reload();
         } else {
           console.log("window is undefined");
         }

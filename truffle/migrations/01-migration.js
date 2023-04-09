@@ -57,7 +57,7 @@ module.exports = async (deployer, network, accounts) => {
     const MaticW2RdexInstance = await MaticW2Rdex.deployed();
     console.log("MaticW2Rdex address: ", MaticW2RdexInstance.address);
 
-    await sleep(2000);
+    if (network === "mumbai") await sleep(2000);
 
     // add DEX as authorized Minter and Burner in LP token
     await MaticW2RPairTokenInstance.addMinterAndBurner(
@@ -90,7 +90,7 @@ module.exports = async (deployer, network, accounts) => {
       TwoWheels2RentRenterInstance.address
     );
 
-    await sleep(10000);
+    if (network === "mumbai") await sleep(10000);
 
     // Deploy LenderWhitelist contract
     await deployer.deploy(
@@ -124,7 +124,8 @@ module.exports = async (deployer, network, accounts) => {
     );
     console.log("LenderWhitelist address set in RenterWhitelist contract");
 
-    await sleep(2000);
+    if (network === "mumbai") await sleep(2000);
+
     // Set whitelist contract addresses  in NFT contracts
     await TwoWheels2RentLenderInstance.setLenderWhitelistContract(
       LenderWhitelistInstance.address
@@ -136,7 +137,8 @@ module.exports = async (deployer, network, accounts) => {
     await TwoWheels2RentLenderInstance.setIpfsHash(lenderIPFS);
     console.log("IPFS hash set in TwoWheels2RentLender NFT contract");
 
-    await sleep(10000);
+    if (network === "mumbai") await sleep(10000);
+
     await TwoWheels2RentRenterInstance.setRenterWhitelistContract(
       RenterWhitelistInstance.address
     );

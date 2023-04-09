@@ -1,5 +1,6 @@
 {
   "name": "2wheels2rent",
+  "description": "2wheels2rent is a decentralized bike-sharing platform",
   "author": "Crypt0zauruS",
   "version": "0.1.0",
   "private": true,
@@ -35,7 +36,6 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-easy-crop": "^4.7.4",
-    "react-hook-form": "^7.43.9",
     "react-leaflet": "^4.2.1",
     "react-select": "^5.7.1",
     "react-toastify": "^9.1.1",
