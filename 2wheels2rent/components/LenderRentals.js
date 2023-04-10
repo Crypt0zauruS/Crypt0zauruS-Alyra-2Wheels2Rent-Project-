@@ -276,6 +276,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                                 <button
                                   className="btn btn-danger"
                                   onClick={handleConfirmBikeReturned}
+                                  disabled={loading}
                                 >
                                   Confirmer ?
                                 </button>
@@ -300,6 +301,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                                 <button
                                   className="btn btn-warning m-2"
                                   onClick={handleCancelRental}
+                                  disabled={loading}
                                 >
                                   Annuler
                                 </button>
@@ -316,6 +318,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                                   className="btn btn-success"
                                   onClick={handleConfirmBikeTaken}
                                   style={{ margin: "0 auto", display: "block" }}
+                                  disabled={loading}
                                 >
                                   Confirmer La location
                                 </button>

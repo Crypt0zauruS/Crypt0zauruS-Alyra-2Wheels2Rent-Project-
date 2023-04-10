@@ -355,6 +355,7 @@ const CheckProposals = ({
                     </p>
                     <button
                       className="btn btn-warning fs-5 m-2"
+                      disabled={loading}
                       onClick={() =>
                         handleAcceptProposal(
                           renter,
@@ -371,6 +372,7 @@ const CheckProposals = ({
                     <button
                       className="btn btn-danger fs-5 m-2"
                       onClick={() => handleCancelProposal(renter)}
+                      disabled={loading}
                     >
                       Refuser
                     </button>
@@ -385,6 +387,7 @@ const CheckProposals = ({
             onClick={cleanProposals}
             className="btn btn-warning m-2"
             style={{ margin: "0 auto", display: "block" }}
+            disabled={loading}
           >
             Nettoyer les propositions expirées
           </button>

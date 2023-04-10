@@ -368,6 +368,7 @@ const MakeProposal = ({
                           type="submit"
                           className="btn btn-info"
                           style={{ maxWidth: "200px" }}
+                          disabled={loader}
                         >
                           Proposer !
                         </button>

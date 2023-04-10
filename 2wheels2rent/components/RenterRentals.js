@@ -234,6 +234,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                                     <button
                                       className="btn btn-warning m-2"
                                       onClick={handleDeclareReturn}
+                                      disabled={loading}
                                     >
                                       Vélo rendu
                                     </button>
@@ -246,6 +247,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                                 <button
                                   className="btn btn-warning m-2"
                                   onClick={handleCancelRenting}
+                                  disabled={loading}
                                 >
                                   Annuler
                                 </button>

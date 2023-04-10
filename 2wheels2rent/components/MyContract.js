@@ -259,11 +259,11 @@ const MyContract = ({
       getAllowance();
       w2Rcontract.once("Approval", (owner, spender, amount) => {
         console.log("Approval", owner, spender, amount);
-        showToast(
-          "W2R autorisé pour le contrat à hauteur de " +
-            Number(ethers.utils.formatUnits(amount, decimals)) +
-            " W2R"
-        );
+        const formatAmount = Number(ethers.utils.formatUnits(amount, decimals));
+        formatAmount > 0 &&
+          showToast(
+            "W2R autorisé pour le contrat à hauteur de " + formatAmount + " W2R"
+          );
       });
     } catch (err) {
       console.log(err);
@@ -352,6 +352,7 @@ const MyContract = ({
               type="button"
               className="btn btn-warning contractButton"
               onClick={handleWithdrawW2R}
+              disabled={loaderContract}
             >
               Retirer des W2R vers mon wallet
             </button>
@@ -362,6 +363,7 @@ const MyContract = ({
                   className="btn btn-info"
                   onClick={handleEnableW2R}
                   style={{ marginBottom: "0.5rem" }}
+                  disabled={loaderContract}
                 >
                   Autoriser W2R pour déposer
                 </button>
@@ -376,6 +378,7 @@ const MyContract = ({
                 type="button"
                 className="btn btn-secondary"
                 onClick={handleDepositW2R}
+                disabled={loaderContract}
               >
                 Déposer les W2R dans ce contrat
               </button>

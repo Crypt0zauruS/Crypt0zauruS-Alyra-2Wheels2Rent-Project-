@@ -683,11 +683,11 @@ const Dex = () => {
                 />
               </div>
               {swapDirection === "MaticToW2R" ? (
-                <button className="my-1" onClick={swapMaticForW2R}>
+                <button className="my-1" onClick={swapMaticForW2R} disabled={loading}>
                   Swap MATIC pour W2R
                 </button>
               ) : (
-                <button className="my-1" onClick={swapW2RForMatic}>
+                <button className="my-1" onClick={swapW2RForMatic} disabled={loading}>
                   Swap W2R pour MATIC
                 </button>
               )}
@@ -745,7 +745,7 @@ const Dex = () => {
                   }
                 }}
               />
-              <button className="m-2" type="button" onClick={addLiquidity}>
+              <button className="m-2" type="button" onClick={addLiquidity} disabled={loading}>
                 Ajouter de la liquidité
               </button>
               <h3 className="text-center m-2">
@@ -769,7 +769,7 @@ const Dex = () => {
                 value={lpTokenAmountToRemove}
                 onChange={(e) => setLpTokenAmountToRemove(e.target.value)}
               />
-              <button className="m-2" onClick={removeLiquidity}>
+              <button className="m-2" onClick={removeLiquidity} disabled={loading}>
                 Retirer la liquidité
               </button>
               <h3 className="text-center m-2">
@@ -790,7 +790,7 @@ const Dex = () => {
                 value={lpTokenAmountToStake}
                 onChange={(e) => setLpTokenAmountToStake(e.target.value)}
               />
-              <button className="my-2" onClick={farm}>
+              <button className="my-2" onClick={farm} disabled={loading}>
                 Staker les Matic-W2R LP Tokens
               </button>
               <h3 className="text-center m-2">
@@ -844,10 +844,10 @@ const Dex = () => {
               <div className="balance d-flex align-items-center mb-2">
                 <h2 className="fs-5 m-2">Récompenses: {rewards} W2R</h2>
                 <div className="ml-auto d-flex">
-                  <button className="btn btn-primary m-2" onClick={harvest}>
+                  <button className="btn btn-primary m-2" onClick={harvest} disabled={loading}>
                     Réclamer et continuer le farming
                   </button>
-                  <button className="btn btn-secondary m-2" onClick={exitFarm}>
+                  <button className="btn btn-secondary m-2" onClick={exitFarm} disabled={loading}>
                     Réclamer et récupérer mon farming
                   </button>
                   <h3 style={{ marginTop: "20px", marginLeft: "10px" }}>
