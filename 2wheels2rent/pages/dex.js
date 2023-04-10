@@ -14,7 +14,8 @@ import W2Rmini from "../private/W2Rmini.png";
 import LPmini from "../private/LPmini.png";
 
 const Dex = () => {
-  const { web3Provider, address, network, provider } = useWeb3Context();
+  const { web3Provider, address, network, provider, disconnect } =
+    useWeb3Context();
   const addToken = useAddTokenToMetaMask();
   const showToast = (message, type = false) => {
     if (!type) {
@@ -584,6 +585,14 @@ const Dex = () => {
         window.location.reload();
       });
     }
+    if (network) {
+      if (network?.chainId !== 80001 && network?.chainId !== 1337) {
+        alert(
+          "Merci de vous connecter au réseau Polygon Mumbai ou au réseau de test local"
+        );
+        disconnect();
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [network]);
 
@@ -620,10 +629,16 @@ const Dex = () => {
                     provider && (
                       <div>
                         {" "}
-                        <button onClick={() => addToken(w2rToken)}>
+                        <button
+                          className="m-2"
+                          onClick={() => addToken(w2rToken)}
+                        >
                           Ajouter {w2rToken?.tokenSymbol} à MetaMask
                         </button>
-                        <button onClick={() => addToken(LPToken)}>
+                        <button
+                          className="m-2"
+                          onClick={() => addToken(LPToken)}
+                        >
                           Ajouter {LPToken?.tokenSymbol} à MetaMask
                         </button>
                       </div>
@@ -865,7 +880,7 @@ const Dex = () => {
         ) : (
           <>
             <hr />
-            <h1 className="text-center">
+            <h1 className="text-center fs-3">
               Connectez-vous pour échanger vos MATIC contre des W2R et
               vice-versa ! Gagner des récompenses en apportant de la liquidité !
             </h1>

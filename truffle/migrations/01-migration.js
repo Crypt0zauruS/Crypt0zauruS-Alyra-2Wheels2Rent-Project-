@@ -46,6 +46,7 @@ module.exports = async (deployer, network, accounts) => {
       MaticW2RPairTokenInstance.address
     );
 
+    if (network === "mumbai") await sleep(5000);
     // Deploy MaticW2Rdex
     await deployer.deploy(
       MaticW2Rdex,
@@ -57,7 +58,7 @@ module.exports = async (deployer, network, accounts) => {
     const MaticW2RdexInstance = await MaticW2Rdex.deployed();
     console.log("MaticW2Rdex address: ", MaticW2RdexInstance.address);
 
-    if (network === "mumbai") await sleep(2000);
+    if (network === "mumbai") await sleep(5000);
 
     // add DEX as authorized Minter and Burner in LP token
     await MaticW2RPairTokenInstance.addMinterAndBurner(
@@ -114,6 +115,7 @@ module.exports = async (deployer, network, accounts) => {
     const RenterWhitelistInstance = await RenterWhitelist.deployed();
     console.log("RenterWhitelist address: ", RenterWhitelistInstance.address);
 
+    if (network === "mumbai") await sleep(5000);
     // Set addresses of each other in contracts
     await LenderWhitelistInstance.setRenterWhitelistAddress(
       RenterWhitelistInstance.address
@@ -124,8 +126,6 @@ module.exports = async (deployer, network, accounts) => {
     );
     console.log("LenderWhitelist address set in RenterWhitelist contract");
 
-    if (network === "mumbai") await sleep(2000);
-
     // Set whitelist contract addresses  in NFT contracts
     await TwoWheels2RentLenderInstance.setLenderWhitelistContract(
       LenderWhitelistInstance.address
@@ -133,11 +133,11 @@ module.exports = async (deployer, network, accounts) => {
     console.log(
       "LenderWhitelist address set in TwoWheels2RentLender NFT contract"
     );
+
+    if (network === "mumbai") await sleep(10000);
     // Set IPFS hash in NFT contracts
     await TwoWheels2RentLenderInstance.setIpfsHash(lenderIPFS);
     console.log("IPFS hash set in TwoWheels2RentLender NFT contract");
-
-    if (network === "mumbai") await sleep(10000);
 
     await TwoWheels2RentRenterInstance.setRenterWhitelistContract(
       RenterWhitelistInstance.address

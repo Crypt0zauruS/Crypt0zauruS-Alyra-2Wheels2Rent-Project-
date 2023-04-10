@@ -1,5 +1,6 @@
 import { useWeb3Context } from "../context/";
 import { useEffect, useState } from "react";
+import { checkIfMetamaskConnected } from "../utils";
 import Image from "next/image";
 import Loader from "./Loader";
 
@@ -8,30 +9,30 @@ interface ConnectProps {
 }
 const ConnectButton = ({ connect }: ConnectProps) => {
   const [isClient, setIsClient] = useState(false);
-  const addPolygonToMetamask = async () => {
-    if (window.ethereum) {
-      try {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [
-            {
-              chainId: "0x89",
-              chainName: "Polygon Network",
-              nativeCurrency: {
-                name: "MATIC",
-                symbol: "MATIC",
-                decimals: 18,
-              },
-              rpcUrls: ["https://rpc-mainnet.maticvigil.com/"],
-              blockExplorerUrls: ["https://polygonscan.com/"],
-            },
-          ],
-        });
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  };
+  // const addPolygonToMetamask = async () => {
+  //   if (window.ethereum) {
+  //    try {
+  //      await window.ethereum.request({
+  //        method: "wallet_addEthereumChain",
+  //        params: [
+  //          {
+  //           chainId: "0x89",
+  //           chainName: "Polygon Network",
+  //           nativeCurrency: {
+  //             name: "MATIC",
+  //             symbol: "MATIC",
+  //             decimals: 18,
+  //           },
+  //           rpcUrls: ["https://rpc-mainnet.maticvigil.com/"],
+  //           blockExplorerUrls: ["https://polygonscan.com/"],
+  //         },
+  //       ],
+  //     });
+  //  } catch (error) {
+  //    console.log(error);
+  //  }
+  // }
+  //};
 
   useEffect(() => {
     setIsClient(true);
@@ -68,7 +69,8 @@ const ConnectButton = ({ connect }: ConnectProps) => {
       </button>
       {isClient && window.ethereum && (
         <button
-          onClick={addPolygonToMetamask}
+          //onClick={addPolygonToMetamask}
+          onClick={checkIfMetamaskConnected}
           className="polygon animate__animated animate__zoomIn btn btn-info gradient-button"
         >
           Passer sur Matic Mumbai{" "}

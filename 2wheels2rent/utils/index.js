@@ -46,6 +46,14 @@ export const addPolygonToMetamask = async () => {
   if (window.ethereum) {
     try {
       await window.ethereum.request({
+        method: "eth_chainId",
+      });
+    } catch (error) {
+      console.log(error);
+      return;
+    }
+    try {
+      await window.ethereum.request({
         method: "wallet_addEthereumChain",
         params: [
           {

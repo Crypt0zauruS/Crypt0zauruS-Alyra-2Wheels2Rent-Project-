@@ -18,10 +18,12 @@ Pour voir une démonstration vidéo de l'application en action, veuillez suivre 
 ## Maquette
 
 Vous trouverez la maquette de l'application en cliquant sur ce lien : [Maquette](https://www.dropbox.com/s/xv1kkyfokp3wv06/Maquette.pdf?dl=0)
+Je vous invite à télécharger le fichier pour une meilleure qualité, le visualiseur de Dropbox donne parfois du flou et je m'en excuse.
 
 ## Schéma
 
 Vous trouverez le schéma de l'application en cliquant sur ce lien : [Schéma](https://www.dropbox.com/s/n0r4sd58jh6ptaj/2Wheels2Rent-Flowchart.pdf?dl=0)
+Je vous invite à télécharger le fichier pour une meilleure qualité, le visualiseur de Dropbox donne parfois du flou et je m'en excuse encore une fois.
 
 ## Application déployée
 
@@ -29,9 +31,12 @@ Vous pouvez accéder à l'application déployée en suivant ce lien : [2Wheels2R
 
 ## Déploiement des contrats
 
-1. Pour déployer les contrats sur Ganache, il suffit de lancer la commande `truffle migrate --network development` dans le dossier truffle.
+1. Pour déployer les contrats sur Ganache, il suffit de lancer la commande
+   `truffle migrate --network development` dans le dossier truffle.
+
 2. Pour déployer les contrats sur Mumbai, il faut d'abord renseigner votre clé privée et votre URL de votre node dédié à Polygon Mumbai, dans un fichier .env à la racine du dossier truffle. Ensuite, assurez-vous de posséder des faucet de MATIC sur votre compte.
-   Enfin, il suffit de lancer la commande `truffle migrate --network mumbai` dans le dossier truffle.
+   Enfin, il suffit de lancer la commande
+   `truffle migrate --network mumbai` dans le dossier truffle.
    Vous constaterez des pauses dans le script de migration concernant le déploiement sur Mumbai. Les contrats et le nombre d'actions à réaliser étant assez conséquentes, ces pauses garantissent le bon déroulement du déploiement.
 3. Vous trouverez dans le dossier truffle un fichier deployment-output.txt qui contient tout le log du déploiement qui a été effectué sur Mumbai.
 
@@ -44,11 +49,16 @@ Dans le dossier truffle/test, il y a 15 fichiers de tests. Je les ai "regroupés
    `ganache --defaultBalanceEther 10000000000000000000`
    Ceci vous évite un message d'erreur "out of gas" après un certain nombre de test. Bien sûr les tests ne coûtent pas autant mais au moins vous avez l'assurance qu'il ne seront pas interrompus
 
-2. Lancer un autre terminal et placer-vous dans le dossier de truffle, puis lancez la commande suivante: `truffle test --network testing ./test/*_part1.js`
+2. Lancer un autre terminal et placer-vous dans le dossier de truffle, puis lancez la commande suivante:
+   `truffle test --network testing ./test/*_part1.js`
+
    Ainsi, vous effectuez les tests avec un deploiement sans instructions supplémentaires inutiles pour les tests, sur ganache, et vous effectuerez donc la première partie des tests. Lorsque c'est terminé, vous n'aurez plus qu'à recommencer en lançant:
+
    `truffle test --network testing ./test/*_part2.js`
-   puis `truffle test --network testing ./test/*_part3.js`
-   puis `truffle test --network testing ./test/*_part4.js`
+   puis
+   `truffle test --network testing ./test/*_part3.js`
+   puis
+   `truffle test --network testing ./test/*_part4.js`
 
 Cette découpe des tests permet leur bon déroulement sans surcharger ganache et évite les messages d'erreurs de connexion interrompue.
 
@@ -193,11 +203,11 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 
 ### Partie 3: Proposition déjà faite, annulation de la location, étapes d'une location, gestion, le token MATIC-W2R LP
 
-#### **Proposition déjà faite**
+##### **Proposition déjà faite**
 
 - Devrait refuser la proposition si un emprunteur a déjà fait une proposition pour un vélo précis
 
-#### **Annulation d'une location**
+##### **Annulation d'une location**
 
 1. Annuler la location en tant que locataire
 
@@ -209,7 +219,7 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 - Le propriétaire doit pouvoir annuler la location
 - Le solde du locataire doit être égal au solde initial après l'annulation
 
-#### **Test des étapes d'une location**
+##### **Test des étapes d'une location**
 
 1. Confirmer que le vélo est pris
 2. Gérer le processus de retour du vélo
@@ -220,7 +230,7 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 6. Ne pas autoriser la confirmation du retour du vélo si non déclaré comme retourné
 7. Ne pas autoriser la confirmation du retour du vélo si déjà retourné
 
-#### **Test de gestion des contrats BikeShare et BikeRent**
+##### **Test de gestion des contrats BikeShare et BikeRent**
 
 1. Retrait des fonds
    - Le owner doit pouvoir retirer des fonds.
@@ -237,7 +247,7 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
    - Les non-whitelistRenter ne doivent pas pouvoir détruire le contrat.
    - Les fonds doivent être transférés au propriétaire.
 
-#### **Test du contrat du MATIC-W2R LP Token**
+##### **Test du contrat du MATIC-W2R LP Token**
 
 1. Vérifier que le nom et le symbole sont corrects
 2. Permettre au owner d'ajouter un minter et un burner
@@ -282,12 +292,51 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 
 ### **Slither**
 
-3. Vous trouverez dans le dossier truffle un fichier slither.html qui présente son rapport. Slither est un outil permettant de détecter d'éventuelles vulnérabilités dans les smart contracts. J'ai obtenu ce rapport en installant [slither](https://github.com/crytic/slither) et [aha](https://github.com/theZiz/aha) puis en lançant
-   `slither ./truffle/contracts 2>&1 | aha > output.html` à la racine du projet, ou `slither ./contracts 2>&1 | aha > output.html` si vous êtes dans le dossier truffle. Je n'ai pas trouvé le moyen de retrouver les couleurs qui s'affichent en console lorsqu'on lance juste `slither ./contracts`
-   Le rapport affichait en rouge 2 lignes de code dans le contrat Base64.sol, écrit en assembly, disant qu'il suspectait un mauvais fonctionnement. Je pense à un faux positif, car l'exécution du code lors du mint des NFT se passe sans erreurs, dans la réalité comme dans les tests.
-   Les commentaires en orange indique des possibilités de reentrancy lorsque un contrat en appelle une fonction d'un autre. Ce sont des avertissements judicieux. J'ai géré chaque appels externe de contrat à contrat avec 2 outils: des requires bien spécifiques, et des booléens vérifiant chaque étapes de l'état du contrat.
-   Les tests se passent bien. Les autres commentaires sont en vert.
+Vous trouverez dans le dossier truffle un fichier slither.html qui présente son rapport. Slither est un outil permettant de détecter d'éventuelles vulnérabilités dans les smart contracts. J'ai obtenu ce rapport en installant
+
+[slither](https://github.com/crytic/slither) et [aha](https://github.com/theZiz/aha)
+
+puis en lançant:
+`slither ./truffle/contracts 2>&1 | aha > output.html`
+
+à la racine du projet, ou
+
+`slither ./contracts 2>&1 | aha > output.html`
+
+si vous êtes dans le dossier truffle.
+
+Je n'ai pas trouvé le moyen de retrouver les couleurs qui s'affichent en console lorsqu'on lance juste
+
+`slither ./contracts`
+
+Le rapport affichait en rouge 2 lignes de code dans le contrat Base64.sol, écrit en assembly, disant qu'il suspectait un mauvais fonctionnement aux lignes 75 et 78.
+Bien sûr, cet avertissement implique une résolution. Je pourrais essayer par exemple de remplacer
+
+```
+mstore(sub(resultPtr, 2), shl(240, 0x3d3d))
+mstore(sub(resultPtr, 1), shl(248, 0x3d))
+
+```
+
+par
+
+```
+mstore(sub(resultPtr, 2), shl(0x3d3d, 240))
+mstore(sub(resultPtr, 1), shl(0x3d, 248))
+```
+
+c'est à dire en inversant les paramètres de la fonction shl. Mais, comme on le sait, corriger un code peut paradoxalement impliquer de casser le reste. N'ayant plus le temps de risquer de changer quoi que ce soit, et vu que le déploiement reste sur un réseau de test et non le mainnet, je préfère vous présenter du code dont je suis sûr qu'il fonctionne, puis tenter la correction décrite juste aprés la soutenence pour régler ce problème.
+
+Les commentaires en orange indique des possibilités de reentrancy lorsque un contrat en appelle une fonction d'un autre. Ce sont des avertissements judicieux. J'ai géré chaque appels externe de contrat à contrat avec 2 outils: des **requires** bien spécifiques, et des **booléens** vérifiant chaque étape de l'état du contrat.
+Les tests se passent bien, mais avant d'envisager un déploiement mainnet il faudra prendre tout le temps nécessaire, des semaines voire des mois s'il le faut, pour les compléter et faire passer au projet un audit de sécurité.
+Les autres commentaires de slither sont en vert.
+
+Remarquons toutefois que slither met des warnings orange sur les propres bibliothèques de openzeppelin, notammnent **/utils/math/Math.sol**. C'est aussi ce genre de "faux positifs" qui m'ont fait décider de ne pas risquer de modidier mon code juste avant la soutenance.
 
 # **Conclusion**
 
-Merci de votre attention. J'espère que vous avez apprécié cette présentation. Je suis à votre disposition pour toute question.
+Merci de votre attention. J'espère que vous avez apprécié cette présentation, faite dans la transparence la plus totale et la fierté de pouvoir présenter à des professionnels tels que vous mon travail, résultat d'un auto-apprentissage intensif qui m'a permis de suivre cette formation Alyra dans d'excellentes conditions. Je suis à votre disposition pour toute question.
+
+```
+
+```

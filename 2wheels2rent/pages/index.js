@@ -347,8 +347,8 @@ export default function Home() {
       <div className="container-fluid">
         {!address && (
           <div className="row welcome-message">
-            Veuillez connecter votre wallet pour accéder à l&apos;application !
-            👆🏽
+            Veuillez connecter votre wallet sur Polygon Mumbai pour accéder à
+            l&apos;application ! 👆🏽
           </div>
         )}
         <div style={{ width: "90%", margin: "auto" }}>
