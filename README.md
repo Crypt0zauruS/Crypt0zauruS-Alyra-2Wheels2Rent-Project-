@@ -36,9 +36,20 @@ Vous pouvez accéder à l'application déployée en suivant ce lien : [2Wheels2R
 
 2. Pour déployer les contrats sur Mumbai, il faut d'abord renseigner votre clé privée et votre URL de votre node dédié à Polygon Mumbai, dans un fichier .env à la racine du dossier truffle. Ensuite, assurez-vous de posséder des faucet de MATIC sur votre compte.
    Enfin, il suffit de lancer la commande
-   `truffle migrate --network mumbai` dans le dossier truffle.
+
+   `truffle migrate --network mumbai`
+   dans le dossier truffle.
    Vous constaterez des pauses dans le script de migration concernant le déploiement sur Mumbai. Les contrats et le nombre d'actions à réaliser étant assez conséquentes, ces pauses garantissent le bon déroulement du déploiement.
+
 3. Vous trouverez dans le dossier truffle un fichier deployment-output.txt qui contient tout le log du déploiement qui a été effectué sur Mumbai.
+
+4. Utilisation de l'optimizer.
+   Pour le déploiement, j'ai utilisé l'optimizer de truffle avec les paramètres suivants:
+   - Runs: 200
+   - Enabled: true
+
+En effet, le projet étant conséquent, il était nécessaire d'optimiser le bytecode des contrats, sur les conseils des avertissements de truffle et de REMIX lors des compilations avant que je ne mette en place l'optimizer.
+On retrouve d'ailleurs ces avertissements au tout début du rapport de slither, présenté en fin de ce ReadMe.
 
 ## Tests unitaires
 
