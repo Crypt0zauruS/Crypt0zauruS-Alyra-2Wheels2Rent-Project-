@@ -111,12 +111,11 @@ const Dex = () => {
             date
           );
           showToast(
-            `Swap effectué avec succès: ${ethers.utils.formatUnits(
-              w2rAmount,
-              18
-            )} W2R pour ${Number(ethers.utils.formatEther(maticAmount)).toFixed(
-              2
-            )} MATIC`
+            `Swap effectué avec succès: ${Number(
+              ethers.utils.formatUnits(w2rAmount, 18)
+            ).toFixed(2)} W2R pour ${Number(
+              ethers.utils.formatEther(maticAmount)
+            ).toFixed(2)} MATIC`
           );
         }
       );
@@ -125,6 +124,9 @@ const Dex = () => {
       console.error(error);
       setLoading(false);
       showToast("Erreur lors du swap", true);
+    } finally {
+      setSwapMaticAmount("");
+      setSwapW2RAmount("");
     }
   };
 
@@ -153,9 +155,9 @@ const Dex = () => {
             date
           );
           showToast(
-            `Swap effectué avec succès: ${ethers.utils.formatEther(
-              maticAmount
-            )} MATIC pour ${Number(
+            `Swap effectué avec succès: ${Number(
+              ethers.utils.formatEther(maticAmount)
+            ).toFixed(2)} MATIC pour ${Number(
               ethers.utils.formatUnits(w2rAmount, 18)
             ).toFixed(2)} W2R`
           );
@@ -166,6 +168,9 @@ const Dex = () => {
       console.error(error);
       setLoading(false);
       showToast("Erreur lors du swap", true);
+    } finally {
+      setSwapMaticAmount("");
+      setSwapW2RAmount("");
     }
   };
 
@@ -220,10 +225,9 @@ const Dex = () => {
           showToast(
             `Ajout de liquidité effectué avec succès: ${Number(
               ethers.utils.formatEther(maticAmount)
-            ).toFixed(2)} MATIC et ${ethers.utils.formatUnits(
-              w2rAmount,
-              18
-            )} W2R, Matic-W2R LP Tokens dans votre wallet.`
+            ).toFixed(2)} MATIC et ${Number(
+              ethers.utils.formatUnits(w2rAmount, 18)
+            ).toFixed(2)} W2R, Matic-W2R LP Tokens dans votre wallet.`
           );
         }
       );
@@ -231,6 +235,9 @@ const Dex = () => {
     } catch (error) {
       console.error("Erreur lors de l'ajout de liquidité:", error);
       setLoading(false);
+    } finally {
+      setW2RAmount("");
+      setMaticAmount("");
     }
   };
 
@@ -282,15 +289,9 @@ const Dex = () => {
             w2rAmount
           );
           showToast(
-            `Retrait de liquidité effectué avec succès: ${Number(
+            `Retrait de liquidité effectué avec succès en échange de ${Number(
               ethers.utils.formatUnits(lpAmount, 18)
-            ).toFixed(
-              2
-            )} Matic-W2R LP Tokens rendus pour ${ethers.utils.formatEther(
-              maticAmount
-            )} MATIC et ${Number(
-              ethers.utils.formatUnits(w2rAmount, 18)
-            ).toFixed(2)} W2R`
+            ).toFixed(2)} Matic-W2R LP Tokens`
           );
         }
       );
@@ -299,6 +300,8 @@ const Dex = () => {
       console.error(error);
       setLoading(false);
       showToast("Erreur lors du retrait de liquidité", true);
+    } finally {
+      setLpTokenAmountToRemove("");
     }
   };
 
@@ -342,6 +345,8 @@ const Dex = () => {
       console.error("Erreur lors du staking:", error);
       setLoading(false);
       showToast("Erreur lors du staking", true);
+    } finally {
+      setLpTokenAmountToStake("");
     }
   };
 
@@ -683,11 +688,19 @@ const Dex = () => {
                 />
               </div>
               {swapDirection === "MaticToW2R" ? (
-                <button className="my-1" onClick={swapMaticForW2R} disabled={loading}>
+                <button
+                  className="my-1"
+                  onClick={swapMaticForW2R}
+                  disabled={loading}
+                >
                   Swap MATIC pour W2R
                 </button>
               ) : (
-                <button className="my-1" onClick={swapW2RForMatic} disabled={loading}>
+                <button
+                  className="my-1"
+                  onClick={swapW2RForMatic}
+                  disabled={loading}
+                >
                   Swap W2R pour MATIC
                 </button>
               )}
@@ -745,7 +758,12 @@ const Dex = () => {
                   }
                 }}
               />
-              <button className="m-2" type="button" onClick={addLiquidity} disabled={loading}>
+              <button
+                className="m-2"
+                type="button"
+                onClick={addLiquidity}
+                disabled={loading}
+              >
                 Ajouter de la liquidité
               </button>
               <h3 className="text-center m-2">
@@ -769,7 +787,11 @@ const Dex = () => {
                 value={lpTokenAmountToRemove}
                 onChange={(e) => setLpTokenAmountToRemove(e.target.value)}
               />
-              <button className="m-2" onClick={removeLiquidity} disabled={loading}>
+              <button
+                className="m-2"
+                onClick={removeLiquidity}
+                disabled={loading}
+              >
                 Retirer la liquidité
               </button>
               <h3 className="text-center m-2">
@@ -844,10 +866,18 @@ const Dex = () => {
               <div className="balance d-flex align-items-center mb-2">
                 <h2 className="fs-5 m-2">Récompenses: {rewards} W2R</h2>
                 <div className="ml-auto d-flex">
-                  <button className="btn btn-primary m-2" onClick={harvest} disabled={loading}>
+                  <button
+                    className="btn btn-primary m-2"
+                    onClick={harvest}
+                    disabled={loading}
+                  >
                     Réclamer et continuer le farming
                   </button>
-                  <button className="btn btn-secondary m-2" onClick={exitFarm} disabled={loading}>
+                  <button
+                    className="btn btn-secondary m-2"
+                    onClick={exitFarm}
+                    disabled={loading}
+                  >
                     Réclamer et récupérer mon farming
                   </button>
                   <h3 style={{ marginTop: "20px", marginLeft: "10px" }}>
