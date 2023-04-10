@@ -189,10 +189,10 @@ const MyContract = ({
         showToast(
           Number(ethers.utils.formatUnits(amount, decimals)) + " W2R déposés"
         );
-        getW2Rbalance();
-        getContractW2Rbalance();
-        setLoaderContract(false);
       });
+      getW2Rbalance();
+      getContractW2Rbalance();
+      setLoaderContract(false);
     } catch (err) {
       console.log(err);
       setLoaderContract(false);

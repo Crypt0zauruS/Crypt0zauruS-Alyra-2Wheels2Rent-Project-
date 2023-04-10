@@ -27,8 +27,8 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
             refund
           )} W2R remboursés`
         );
-        retrieveCurrentRental();
       });
+      retrieveCurrentRental();
     } catch (error) {
       console.log(error);
       showToast("Erreur lors de l'annulation de la location", true);
@@ -76,8 +76,8 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
       await tx.wait();
       contract.once("RentalDeclaredAsReturned", (lender, date, renter) => {
         showToast(`Location déclarée comme retournée pour ${lender}`);
-        retrieveCurrentRental();
       });
+      retrieveCurrentRental();
     } catch (error) {
       console.log(error);
       showToast("Erreur lors de la déclaration du retour", true);

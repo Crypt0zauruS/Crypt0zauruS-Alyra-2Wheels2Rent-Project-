@@ -36,9 +36,10 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
               depositReturned
             )} remboursé`
           );
-          retrieveCurrentRental();
+          
         }
       );
+      retrieveCurrentRental();
     } catch (error) {
       console.log(error);
       showToast("Erreur lors de l'annulation de la location", true);
