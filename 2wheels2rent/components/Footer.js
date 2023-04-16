@@ -21,7 +21,7 @@ const Footer = ({ show }) => {
     <div>
       <footer>
         <div style={{ color: "black" }}>
-          2Wheels2Rent - 2023 -{" "}
+          &copy; 2Wheels2Rent - 2023 -{" "}
           <span
             onClick={() => {
               setModal(!modal);
@@ -37,15 +37,32 @@ const Footer = ({ show }) => {
               rel="noopener noreferrer"
               href="https://vercel.com/docs/concepts/next.js/overview"
             >
-              <span style={{ color: "black" }}> Next.js by </span>
+              <span style={{ color: "orangered", cursor: "pointer" }}>
+                {" "}
+                Next.js
+              </span>
             </a>{" "}
+            by{" "}
             <a
               target="_blank"
               rel="noopener noreferrer"
               href="https://github.com/Crypt0zauruS/"
             >
               <span style={{ color: "orangered", cursor: "pointer" }}>
-                Crypt0zauruS{" "}
+                &copy; Crypt0zauruS - 2023{" "}
+              </span>
+            </a>
+            <br />
+            This Project is licensed under{" "}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="http://creativecommons.org/licenses/by/4.0/"
+            >
+              {" "}
+              <span style={{ color: "orangered", cursor: "pointer" }}>
+                Creative Commons Attribution 4.0 International License (CC BY
+                4.0)
               </span>
             </a>
           </p>

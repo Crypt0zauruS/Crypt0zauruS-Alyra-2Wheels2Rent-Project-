@@ -1,12 +1,13 @@
 {
   "name": "truffle-2wheels2rent-project",
   "author": "Crypt0zauruS",
+  "license": "CC-BY-4.0",
   "version": "1.0.0",
+  "private": true,
   "description": "Truffle project 2wheels2rent contracts",
   "scripts": {
     "test": "npx truffle test"
   },
-  "license": "ISC",
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.2",
     "@truffle/hdwallet-provider": "^2.1.7",

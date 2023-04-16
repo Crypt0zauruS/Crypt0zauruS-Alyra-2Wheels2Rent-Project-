@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC-BY-4.0
 pragma solidity ^0.8.17;
 
 // import ERC20.sol

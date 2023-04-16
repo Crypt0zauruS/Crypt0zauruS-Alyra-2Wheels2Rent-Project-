@@ -462,6 +462,10 @@ footer a {
   display: inline-block;
 }
 
+footer a:hover {
+  transform: scale(1.02) !important;
+}
+
 a,
 a:hover,
 a:focus {

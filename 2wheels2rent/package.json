@@ -2,6 +2,7 @@
   "name": "2wheels2rent",
   "description": "2wheels2rent is a decentralized bike-sharing platform",
   "author": "Crypt0zauruS",
+  "license": "CC-BY-4.0",
   "version": "0.1.0",
   "private": true,
   "scripts": {

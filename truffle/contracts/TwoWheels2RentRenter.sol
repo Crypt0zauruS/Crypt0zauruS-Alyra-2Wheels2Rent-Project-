@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: MIT
-
+// SPDX-License-Identifier: CC-BY-4.0
 pragma solidity ^0.8.9;
 
 //import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -21,10 +20,10 @@ contract TwoWheels2RentRenter is ERC721URIStorage, Ownable {
     Counters.Counter private _tokenIds;
     address public whitelistContract;
     string ipfsHash;
-    
-    /** 
-    * @dev Struct to store renter information
-    */
+
+    /**
+     * @dev Struct to store renter information
+     */
     struct RenterInfo {
         string name;
         string rather;

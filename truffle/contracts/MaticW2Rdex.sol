@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC-BY-4.0
 pragma solidity ^0.8.9;
 
 //import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -384,6 +384,12 @@ contract MaticW2Rdex is Ownable {
             10 ** 18) + farming[msg.sender].rewards;
         return reward;
     }
+
+    /**
+     * @notice Calculates the reward for a user based on their LP balance, time elapsed, and the global reward rate.
+     * @dev This function is private and should only be called within the contract.
+     * @return The calculated reward amount for the user.
+     */
 
     function calculateReward() private returns (uint) {
         uint lpBalance = farming[msg.sender].lpAmount;

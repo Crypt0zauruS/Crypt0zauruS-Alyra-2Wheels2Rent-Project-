@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: MIT
-
+// SPDX-License-Identifier: CC-BY-4.0
 pragma solidity ^0.8.9;
 
 //import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
