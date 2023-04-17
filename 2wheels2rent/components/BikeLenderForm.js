@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import Select from "react-select";
 import DOMPurify from "isomorphic-dompurify";
 import { bikeBrands } from "../utils";
+import Tooltip from "./Tooltip";
 
 const BikeLenderForm = ({
   username,
@@ -100,7 +101,10 @@ const BikeLenderForm = ({
           required
         />
 
-        <label htmlFor="serialNumber">Numéro de série:</label>
+        <label htmlFor="serialNumber">
+          Numéro de série{" "}
+          <Tooltip content="Pour trouver le numéro de série de votre vélo, regardez sous le cadre, près de la pédale. Il peut se trouver également sous le pédalier, sur le tube de selle ou le tube horizontal" />
+        </label>
         <input
           type="text"
           id="serialNumber"
@@ -111,7 +115,8 @@ const BikeLenderForm = ({
         />
 
         <label htmlFor="registrationNumber">
-          Numéro d&apos;immatriculation:
+          Numéro d&apos;immatriculation{" "}
+          <Tooltip content="Le gravage d'immatriculation se trouve souvent sur le cadre, près du pédalier ou du tube de selle. Si vous n'avez pas immatriculé votre vélo, écrivez 'aucun'. Cependant, nous vous conseillons vivement de le faire." />
         </label>
         <input
           type="text"

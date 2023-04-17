@@ -19,7 +19,34 @@ const useImageClassifier = (
     }
     try {
       setLoader(true);
-      const imageURL = URL.createObjectURL(e.target.files[0]);
+
+      let file = e.target.files[0];
+      const fileType = file.type;
+      let imageURL;
+
+      if (
+        typeof window !== "undefined" &&
+        (fileType === "image/heic" || fileType === "image/heif")
+      ) {
+        try {
+          const heic2any = require("heic2any");
+          const blob = await heic2any({
+            blob: file,
+            toType: "image/png",
+            quality: 0.8,
+          });
+          imageURL = URL.createObjectURL(blob);
+          console.log("Image converted to PNG");
+        } catch (conversionError) {
+          console.error("Erreur lors de la conversion:", conversionError);
+          showToast("Problème lors de la conversion de l'image", true);
+          setLoader(false);
+          return;
+        }
+      } else {
+        imageURL = URL.createObjectURL(file);
+      }
+      //const imageURL = URL.createObjectURL(e.target.files[0]);
       const model = await mobilenet.load();
       const imgElement = document.createElement("img");
       imgElement.src = imageURL;
@@ -44,6 +71,7 @@ const useImageClassifier = (
         }
       };
       e.target.value = null;
+      file = null;
     } catch (error) {
       console.log("Erreur lors du chargement du modèle:", error);
       showToast("Problème lors du chargement du modèle", true);

@@ -30,6 +30,7 @@
     "firebase": "^9.18.0",
     "firebase-admin": "^11.5.0",
     "geolib": "^3.3.3",
+    "heic2any": "^0.0.4",
     "isomorphic-dompurify": "^1.2.0",
     "leaflet": "^1.9.3",
     "next": "13.1.6",
