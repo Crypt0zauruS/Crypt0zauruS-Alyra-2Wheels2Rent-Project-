@@ -69,6 +69,7 @@ const Camera = ({ setQrData }) => {
         }
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <div id="qr-code-reader" />;

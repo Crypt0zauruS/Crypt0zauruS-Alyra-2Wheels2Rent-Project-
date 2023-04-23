@@ -676,8 +676,8 @@ const Dex = () => {
                     Bien que le Dex soit pleinement fonctionnel testé en réseau
                     local, il n&apos;est pas encore possible de l&apos;utiliser
                     sur Mumbai, ne pouvant pas apporter la liquidité nécessaire
-                    en Matic de test (nous n&apos;avons droit qu'à une fraction
-                    par jour😅).
+                    en Matic de test (nous n&apos;avons droit qu&apos;à une
+                    fraction par jour😅).
                     <br />
                     Pour l&apos;instant, vous pouvez récupérer des tokens W2R de
                     test ({testAmount} par jour) pour utiliser
@@ -1023,12 +1023,12 @@ const Dex = () => {
               Bien que le Dex soit pleinement fonctionnel testé en réseau local,
               il n&apos;est pas encore possible de l&apos;utiliser sur Mumbai.
               En attendant, vous pouvez réclamer vos W2R de test en connectant
-              votre wallet pour utiliser l'application.
+              votre wallet pour utiliser l&apos;application.
               <br />
               Je songe toutefois à créer prochainement un token temporaire ERC20
-              "testMATIC" pour que vous puissiez tester le Dex en conditions
-              réelles. Ceci dit, cela demandera de réécrire les fonctions du DEX
-              car le MATIC n'est pas un ERC20.
+              &quot;testMATIC&quot; pour que vous puissiez tester le Dex en
+              conditions réelles. Ceci dit, cela demandera de réécrire les
+              fonctions du DEX car le MATIC n&apos;est pas un ERC20.
             </h1>
             <hr />
             <h1 className="text-center fs-5">
