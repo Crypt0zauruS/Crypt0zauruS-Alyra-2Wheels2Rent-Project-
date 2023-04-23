@@ -2,13 +2,16 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import format from "date-fns/format";
 import fr from "date-fns/locale/fr";
+import QRCode from "qrcode.react";
 import Loader from "./Loader";
 
 const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
   const [rental, setRental] = useState({});
   const [rentals, setRentals] = useState([]);
+  const [rentalToken, setRentalToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [showAllRentals, setShowAllRentals] = useState(false);
+  const [countdown, setCountdown] = useState(null);
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -17,6 +20,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
   };
 
   const handleCancelRenting = async () => {
+    if (rental.cantCancel) return;
     setLoading(true);
     try {
       const tx = await contract.cancelRenting();
@@ -70,7 +74,6 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
   };
 
   const handleDeclareReturn = async () => {
-    setLoading(true);
     try {
       const tx = await contract.returnBike();
       await tx.wait();
@@ -81,6 +84,43 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
     } catch (error) {
       console.log(error);
       showToast("Erreur lors de la déclaration du retour", true);
+    }
+  };
+
+  const fetchRandomToken = async () => {
+    const response = await fetch("/api/randomToken");
+    const data = await response.json();
+    return data.token;
+  };
+
+  const handleGenerateToken = async () => {
+    const token = await fetchRandomToken();
+    if (!token || typeof token !== "string") return;
+    if (token.length !== 30) {
+      showToast("Erreur lors de la génération du QR code", true);
+      return;
+    }
+    setLoading(true);
+    if (rental.cantCancel && !rental.seemsReturned) {
+      alert("Vous aurez 2 transactions à valider");
+    }
+    try {
+      const tx = await contract.setRentalToken(token);
+      await tx.wait();
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du token :", error);
+      setLoading(false);
+      return;
+    }
+    try {
+      if (rental.cantCancel && !rental.seemsReturned) {
+        await handleDeclareReturn();
+      }
+      setRentalToken(token);
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du token :", error);
+
+      showToast("Erreur lors de l'enregistrement du token", true);
     } finally {
       setLoading(false);
     }
@@ -156,6 +196,30 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
     setShowAllRentals(true);
   };
 
+  useEffect(() => {
+    let countdownTimer;
+    if (rentalToken) {
+      setCountdown(60);
+      countdownTimer = setInterval(() => {
+        setCountdown((prevCountdown) => {
+          if (prevCountdown === 1) {
+            clearInterval(countdownTimer);
+            setRentalToken("");
+            return 0;
+          }
+          return prevCountdown - 1;
+        });
+      }, 1000);
+    } else {
+      setCountdown(null);
+      setRentalToken("");
+    }
+
+    return () => {
+      clearInterval(countdownTimer);
+    };
+  }, [rentalToken]);
+
   return (
     <div className="modalContract">
       {!showAllRentals ? (
@@ -176,7 +240,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                     style={{ background: "lightgrey" }}
                   >
                     {rental.date ? (
-                      <table className="table">
+                      <table className="table text-center">
                         <tbody>
                           <tr>
                             <th scope="row">Date</th>
@@ -230,28 +294,52 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                                         rental.date + rental.duration
                                       )}
                                     </span>
-                                    , je le déclarerai comme rendu:{" "}
-                                    <button
-                                      className="btn btn-warning m-2"
-                                      onClick={handleDeclareReturn}
-                                      disabled={loading}
-                                    >
-                                      Vélo rendu
-                                    </button>
+                                    , je lui présenterai le QR code de fin de
+                                    location:{" "}
                                   </div>
+                                )}
+                                {!rentalToken && !rental.isReturned && (
+                                  <button
+                                    className="btn btn-warning m-2"
+                                    onClick={handleGenerateToken}
+                                    disabled={
+                                      loading ||
+                                      rentalToken ||
+                                      rental.isReturned
+                                    }
+                                  >
+                                    {rental.seemsReturned
+                                      ? "Réessayer"
+                                      : "Générer QR code"}
+                                  </button>
                                 )}
                               </td>
                             ) : (
-                              <td>
-                                Annulation possible
-                                <button
-                                  className="btn btn-warning m-2"
-                                  onClick={handleCancelRenting}
-                                  disabled={loading}
-                                >
-                                  Annuler
-                                </button>
-                              </td>
+                              <>
+                                <td>
+                                  Annulation{" "}
+                                  {Math.floor(Date.now() / 1000) > rental.date
+                                    ? "suggérée car l'heure du RDV est dépassée"
+                                    : "possible"}
+                                  <button
+                                    className="btn btn-warning m-2"
+                                    onClick={handleCancelRenting}
+                                    disabled={loading}
+                                  >
+                                    Annuler
+                                  </button>
+                                  <hr />
+                                  Je suis avec le loueur, je clique pour lui
+                                  présenter mon QR code:
+                                  <button
+                                    className="btn btn-warning m-2"
+                                    onClick={handleGenerateToken}
+                                    disabled={loading || rentalToken}
+                                  >
+                                    Générer QR code
+                                  </button>
+                                </td>
+                              </>
                             )}
                             {rental.isReturned && <td>Velo retourné</td>}
                           </tr>
@@ -370,6 +458,23 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
           </button>
         </div>
       </div>
+      {rentalToken && (
+        <div className="qr-code">
+          <h3 className="fs-5">
+            {countdown > 0 && `Token valide ${countdown} secondes :`}
+          </h3>
+          <p className="fs-5">{rentalToken}</p>
+          <h3 className="fs-5">QR Code :</h3>
+          <QRCode value={rentalToken} />
+          <button
+            className="btn btn-danger m-2"
+            disabled={loading}
+            onClick={() => setRentalToken("")}
+          >
+            Je confirme que le QR Code a été scanné par le loueur
+          </button>
+        </div>
+      )}
     </div>
   );
 };

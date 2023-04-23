@@ -4,12 +4,33 @@ Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de 
 
 ## Table des matières
 
+- [Mises à jour](#mises-à-jour)
 - [Démonstration](#démonstration)
 - [Maquette](#maquette)
 - [Schéma](#schéma)
 - [Application déployée](#application-déployée)
 - [Déploiement des contrats](#déploiement)
 - [Tests unitaires](#tests-unitaires)
+
+## Mises à jour
+
+### 1.1.0
+#### 2023-04-23
+
+- Ajout de la fonctionnalité d'échange de QR codes pour la prise et le retour des vélos entre loueurs et emprunteurs
+- Le contenu des QR codes est sauvegardé dans les locations des contrats BikeShare et BikeRent
+- Ajout d'un délai de 2 jours après la fin d'une location pour se désinscrire de la plateforme
+- Ajout d'une fonction qui envoie la caution dans le vault en cas d'une désinscription pendant un litige
+- Ajout de la fonctionnalité dans le DEX qui permet de récupérer des W2R de test pour utiliser l'application sur Mumbai
+- Affichage des cours du Matic et du W2R dans le header, en USD et en EUR
+- Optimisation du code
+- Mise à jour des tests unitaires
+- A faire: nouvelle vidéo de démonstration
+
+### 1.0.0
+#### 2023-04-10
+
+Initialisation du projet
 
 ## Démonstration
 
@@ -54,7 +75,7 @@ On retrouve d'ailleurs ces avertissements au tout début du rapport de slither, 
 ## Tests unitaires
 
 Pour exécuter les tests unitaires, Il faut suivre une procédure spécifique pour ne pas surcharger Ganache.
-Dans le dossier truffle/test, il y a 15 fichiers de tests. Je les ai "regroupés" en 4 parties.
+Dans le dossier truffle/test, il y a 15 fichiers de tests. Je les ai "regroupés" en 5 parties.
 
 1. Lancer ganache dans le terminal en exécutant la commande
    `ganache --defaultBalanceEther 10000000000000000000`
@@ -66,10 +87,15 @@ Dans le dossier truffle/test, il y a 15 fichiers de tests. Je les ai "regroupés
    Ainsi, vous effectuez les tests avec un deploiement sans instructions supplémentaires inutiles pour les tests, sur ganache, et vous effectuerez donc la première partie des tests. Lorsque c'est terminé, vous n'aurez plus qu'à recommencer en lançant:
 
    `truffle test --network testing ./test/*_part2.js`
+
    puis
    `truffle test --network testing ./test/*_part3.js`
+
    puis
    `truffle test --network testing ./test/*_part4.js`
+
+   puis
+   `truffle test --network testing ./test/*_part5.js`
 
 Cette découpe des tests permet leur bon déroulement sans surcharger ganache et évite les messages d'erreurs de connexion interrompue.
 
@@ -212,7 +238,7 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
    - devrait annuler la location en tant que locataire
    - devrait annuler la location en tant que prêteur
 
-### Partie 3: Proposition déjà faite, annulation de la location, étapes d'une location, gestion, le token MATIC-W2R LP
+### Partie 3: Proposition déjà faite, annulation de la location, étapes d'une location
 
 ##### **Proposition déjà faite**
 
@@ -240,6 +266,8 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 5. Ne pas autoriser le retour du vélo si non pris
 6. Ne pas autoriser la confirmation du retour du vélo si non déclaré comme retourné
 7. Ne pas autoriser la confirmation du retour du vélo si déjà retourné
+
+### Partie 4 : Gestion, le token MATIC-W2R LP
 
 ##### **Test de gestion des contrats BikeShare et BikeRent**
 
@@ -271,7 +299,7 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 9. Ne pas permettre au minter de transférer des jetons à un non-minter
 10. Ne pas permettre la création de jetons à l'adresse zéro
 
-### Partie 4 : Fonctionnement du DEX
+### Partie 5 : Fonctionnement du DEX
 
 1. Vérifier le taux de swap initial correct
 2. Permettre au owner de mettre à jour le taux de swap
@@ -346,7 +374,7 @@ Remarquons toutefois que slither met des warnings orange sur les propres bibliot
 
 # **Conclusion**
 
-Merci de votre attention. J'espère que vous avez apprécié cette présentation, faite dans la transparence la plus totale et la fierté de pouvoir présenter à des professionnels tels que vous mon travail, résultat d'un auto-apprentissage intensif qui m'a permis de suivre cette formation Alyra dans d'excellentes conditions. Je suis à votre disposition pour toute question.
+Merci de votre attention. J'espère que vous avez apprécié cette présentation, faite dans la transparence la plus totale et la fierté de pouvoir présenter à des professionnels ou des curieux, résultat d'un auto-apprentissage intensif qui m'a permis de suivre cette formation Alyra dans d'excellentes conditions. Je suis à votre disposition pour toute question.
 
 ```
 

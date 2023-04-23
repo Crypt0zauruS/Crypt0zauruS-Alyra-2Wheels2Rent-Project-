@@ -22,7 +22,8 @@ const CheckProposals = ({
 
   const cleanProposals = async () => {
     try {
-      if (proposals.length === 0) {
+      const length = await contract.getProposalsLength();
+      if (Number(length) === 0) {
         showToast("Aucune proposition à supprimer");
         return;
       }

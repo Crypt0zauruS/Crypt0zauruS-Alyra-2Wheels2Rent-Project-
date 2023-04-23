@@ -94,10 +94,13 @@ contract RenterWhitelist is Ownable {
         address _TW2RLenderNFT,
         I2VaultW2R _vaultW2R
     ) {
-        require(_TW2RR != address(0));
-        require(_W2R != address(0));
-        require(_TW2RLenderNFT != address(0));
-        require(address(_vaultW2R) != address(0));
+        require(
+            _TW2RR != address(0) &&
+                _W2R != address(0) &&
+                _TW2RLenderNFT != address(0) &&
+                address(_vaultW2R) != address(0),
+            "bad address"
+        );
         vaultW2R = _vaultW2R;
         // set the address of the TwoWheels2RentRenter contract
         TW2RR = I1TwoWheels2RentRenter(_TW2RR);
@@ -128,23 +131,20 @@ contract RenterWhitelist is Ownable {
         string memory name,
         string memory rather
     ) public {
-        require(!blacklistedAddresses[msg.sender], "blacklisted");
-        require(!whitelistedAddresses[msg.sender].isWhitelisted, "whitelisted");
+        require(!blacklistedAddresses[msg.sender], "bl");
+        require(!whitelistedAddresses[msg.sender].isWhitelisted, "wl");
         require(
             whitelistedAddresses[msg.sender].bikeRentContract == address(0),
             "deployed"
         );
         require(whitelistedAddresses[msg.sender].NFTId == 0, "minted");
-        require(
-            bytes(name).length > 0 && bytes(rather).length > 0,
-            "Empty fields"
-        );
+        require(bytes(name).length > 0 && bytes(rather).length > 0, "empty");
         require(
             bytes(name).length <= 40 && bytes(rather).length <= 40,
-            "Too long"
+            "too long"
         );
         // check if the image is set
-        require(TW2RR.getIpfsHashLength(), "IPFS not set");
+        require(TW2RR.getIpfsHashLength(), "no IPFS");
         // set the RenterInfo struct
         I1TwoWheels2RentRenter.RenterInfo
             memory renterInfo = I1TwoWheels2RentRenter.RenterInfo(name, rather);
@@ -169,16 +169,13 @@ contract RenterWhitelist is Ownable {
      */
 
     function deployBikeRentContract() private {
-        require(!blacklistedAddresses[msg.sender], "blacklisted");
-        require(
-            whitelistedAddresses[msg.sender].isWhitelisted,
-            "Not whitelisted"
-        );
+        require(!blacklistedAddresses[msg.sender], "bl");
+        require(whitelistedAddresses[msg.sender].isWhitelisted, "not wl");
         require(
             whitelistedAddresses[msg.sender].bikeRentContract == address(0),
             "deployed"
         );
-        require(whitelistedAddresses[msg.sender].NFTId != 0, "Not minted");
+        require(whitelistedAddresses[msg.sender].NFTId != 0, "not minted");
         require(lenderWhitelist != address(0));
         // deploy bikeRent contract
         bikeRent = new BikeRent(
@@ -206,12 +203,9 @@ contract RenterWhitelist is Ownable {
      */
 
     function removeAddressFromWhitelist() external {
-        require(!blacklistedAddresses[msg.sender], "blacklisted");
+        require(!blacklistedAddresses[msg.sender], "bl");
         // msg.sender is the address of the caller of this function
-        require(
-            whitelistedAddresses[msg.sender].isWhitelisted,
-            "Not whitelisted"
-        );
+        require(whitelistedAddresses[msg.sender].isWhitelisted, "not wl");
         doRemoveStuff(msg.sender);
         // emit event
         emit RenterRemovedFromWhitelist(
@@ -226,10 +220,10 @@ contract RenterWhitelist is Ownable {
      */
 
     function addToBlacklist(address _address) external onlyOwner {
-        require(!blacklistedAddresses[_address], "blacklisted");
+        require(!blacklistedAddresses[_address], "bl");
         // if address was whitelisted
         if (whitelistedAddresses[_address].isWhitelisted) {
-            require(doRemoveStuff(_address), "Error");
+            require(doRemoveStuff(_address), "error");
             // add address to blacklist
             blacklistedAddresses[_address] = true;
             // emit event
@@ -246,7 +240,7 @@ contract RenterWhitelist is Ownable {
      */
 
     function removeFromBlacklist(address _address) external onlyOwner {
-        require(blacklistedAddresses[_address], "Not blacklisted");
+        require(blacklistedAddresses[_address], "not bl");
         // remove address from blacklist
         delete blacklistedAddresses[_address];
         // emit event
@@ -263,15 +257,15 @@ contract RenterWhitelist is Ownable {
         // burn NFT
         require(
             TW2RR.burnNFT(whitelistedAddresses[_address].NFTId),
-            "Error burning NFT"
+            "burn error"
         );
         // destroy bikeRent contract
         bikeRent = BikeRent(whitelistedAddresses[_address].bikeRentContract);
+        require(bikeRent.destroy(), "error destroy");
         require(
             vaultW2R.removeApprovedContract(address(bikeRent)),
             "Error removing"
         );
-        require(bikeRent.destroy(), "Error destroying");
         // remove address from whitelist
         delete whitelistedAddresses[_address];
         numAddressesWhitelisted--;
@@ -283,6 +277,6 @@ contract RenterWhitelist is Ownable {
      */
 
     function renounceOwnership() public view override onlyOwner {
-        revert("Cannot be renounced");
+        revert("Cant be renounced");
     }
 }

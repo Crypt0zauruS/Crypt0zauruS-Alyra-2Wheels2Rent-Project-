@@ -265,7 +265,7 @@ contract("Propose and accept", (accounts) => {
         bikeRent.makeProposal(bikeShare.address, dateMin, dateMax, rentalTime, {
           from: renter,
         }),
-        "Date too soon"
+        "too soon"
       );
     });
   });
@@ -440,7 +440,7 @@ contract("Propose and accept", (accounts) => {
           longitude,
           { from: owner }
         ),
-        "GPS not set"
+        "no GPS"
       );
     });
   });

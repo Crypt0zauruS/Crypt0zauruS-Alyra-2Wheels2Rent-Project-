@@ -54,8 +54,13 @@ contract MaticW2Rdex is Ownable {
     I5VaultW2R vaultW2R;
 
     mapping(address => uint) public LPBalance;
-
     mapping(address => Farming) public farming;
+
+    // Mappings and uint for Tests on Mumbai
+    mapping(address => uint) private lastDistributeTimestamp;
+    mapping(bytes32 => uint) private lastIPDistributeTimestamp;
+    uint public testAmount;
+    // End of Mappings and uint for Tests on Mumbai
 
     struct Farming {
         uint lastTime;
@@ -119,6 +124,7 @@ contract MaticW2Rdex is Ownable {
         vaultW2R = I5VaultW2R(vaultW2RAddress);
         securityPercentage = 5;
         feesPercent = 1;
+        testAmount = 1000 * 10 ** 18;
     }
 
     /**
@@ -141,6 +147,53 @@ contract MaticW2Rdex is Ownable {
         require(lpAmount <= LPBalance[msg.sender], "Not enough LP tokens");
 
         _;
+    }
+
+    /**
+     * @dev Distribute 2000 W2R tokens to the caller as a tester once per day, only on Mumbai Testnet.
+     * Owner can set testAmount to 0 to disable this function.
+     * @param ipHash The keccak256 hash of the caller's IP address.
+     */
+    function distributeTestW2R(bytes32 ipHash) external {
+        require(testAmount > 0, "Test amount must be greater than 0");
+        // Make sure this function is only callable on Mumbai Testnet
+        uint chainId;
+        assembly {
+            chainId := chainid()
+        }
+        require(
+            chainId == 80001,
+            "This function can only be used on the Mumbai Testnet"
+        );
+        uint currentTime = block.timestamp;
+        // Check IP limit
+        require(
+            currentTime - lastIPDistributeTimestamp[ipHash] >= 1 days,
+            "You can only call this function once a day per IP"
+        );
+        lastIPDistributeTimestamp[ipHash] = currentTime;
+        // Check address limit
+        require(
+            currentTime - lastDistributeTimestamp[msg.sender] >= 1 days,
+            "You can only call this function once a day"
+        );
+        lastDistributeTimestamp[msg.sender] = currentTime;
+        vaultW2R.distributeW2R(msg.sender, testAmount);
+    }
+
+    /**
+     * @dev Set the amount of W2R tokens to be distributed during testing.
+     * Can only be called by the contract owner.
+     * @param _amount The new test amount to be distributed (in W2R tokens).
+     * Must be greater or equal to 0 and less than or equal to 10,000 W2R.
+     */
+    function setTestAmount(uint _amount) external onlyOwner {
+        require(_amount >= 0, "Amount must be greater or equal to 0");
+        require(
+            _amount <= 10000 * 10 ** 18,
+            "Amount must be less than 10000 W2R"
+        );
+        testAmount = _amount;
     }
 
     /**

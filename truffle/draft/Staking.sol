@@ -7,7 +7,7 @@ import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 interface I6VaultW2R {
-    function distributeW2R(address receiver, uint256 amount) external;
+    function distributeW2R(address receiver, uint amount) external;
 }
 
 contract W2RStaking is Ownable {
@@ -17,36 +17,39 @@ contract W2RStaking is Ownable {
     AggregatorV3Interface internal priceFeed;
 
     struct StakerInfo {
-        uint256 stakedAmount;
-        uint256 lastUpdated;
-        uint256 reward;
+        uint stakedAmount;
+        uint lastUpdated;
+        uint reward;
     }
 
-    uint256 public lockPeriod = 30 days;
-    uint256 public earlyUnstakePenalty = 10; // 10% penalty for early unstaking
-    uint256 public totalStakedValue;
-    uint256 public rewardMultiplier = 1e18;
+    uint public lockPeriod = 30 days;
+    uint public earlyUnstakePenalty = 10; // 10% penalty for early unstaking
+    uint public totalStakedValue;
+    uint public rewardMultiplier = 1e18;
 
     mapping(address => StakerInfo) public stakers;
 
     // import VaultW2R interface
     I6VaultW2R private vaultW2R;
 
-    event Staked(address indexed user, uint256 amount);
-    event Unstaked(address indexed user, uint256 amount);
-    event RewardClaimed(address indexed user, uint256 amount);
-    event RewardMultiplierUpdated(uint256 newRewardMultiplier);
-    event LockPeriodUpdated(uint256 newLockPeriod);
-    event EarlyUnstakePenaltyUpdated(uint256 newEarlyUnstakePenalty);
+    event Staked(address indexed user, uint amount);
+    event Unstaked(address indexed user, uint amount);
+    event RewardClaimed(address indexed user, uint amount);
+    event RewardMultiplierUpdated(uint newRewardMultiplier);
+    event LockPeriodUpdated(uint newLockPeriod);
+    event EarlyUnstakePenaltyUpdated(uint newEarlyUnstakePenalty);
 
     constructor(
         IERC20 _w2rToken,
         AggregatorV3Interface _priceFeed,
         address _vaultW2R
     ) {
-        require(address(_w2rToken) != address(0), "Invalid address");
-        require(address(_priceFeed) != address(0), "Invalid address");
-        require(address(_vaultW2R) != address(0), "Invalid address");
+        require(
+            address(_w2rToken) != address(0) &&
+                address(_priceFeed) != address(0) &&
+                address(_vaultW2R) != address(0),
+            "Invalid address"
+        );
         w2rToken = _w2rToken;
         priceFeed = _priceFeed;
         vaultW2R = I6VaultW2R(_vaultW2R);
@@ -60,14 +63,14 @@ contract W2RStaking is Ownable {
         _;
     }
 
-    function setLockPeriod(uint256 _newLockPeriod) external onlyOwner {
+    function setLockPeriod(uint _newLockPeriod) external onlyOwner {
         require(_newLockPeriod > 0, "Lock period cannot be 0");
         lockPeriod = _newLockPeriod;
         emit LockPeriodUpdated(_newLockPeriod);
     }
 
     function setEarlyUnstakePenalty(
-        uint256 _newEarlyUnstakePenalty
+        uint _newEarlyUnstakePenalty
     ) external onlyOwner {
         require(
             _newEarlyUnstakePenalty <= 100,
@@ -81,7 +84,7 @@ contract W2RStaking is Ownable {
         emit EarlyUnstakePenaltyUpdated(_newEarlyUnstakePenalty);
     }
 
-    function stake(uint256 _amount) external checkAllowance(_amount) {
+    function stake(uint _amount) external checkAllowance(_amount) {
         require(msg.sender != address(0), "Invalid address");
         require(_amount > 0, "Staking amount must be greater than 0");
         require(
@@ -89,7 +92,7 @@ contract W2RStaking is Ownable {
             "Not enough tokens to stake"
         );
         w2rToken.safeTransferFrom(msg.sender, address(this), _amount);
-        StakerInfo memory staker = stakers[msg.sender];
+        StakerInfo storage staker = stakers[msg.sender];
         _updateReward(msg.sender);
         staker.stakedAmount += _amount;
         staker.lastUpdated = block.timestamp;
@@ -97,10 +100,10 @@ contract W2RStaking is Ownable {
         emit Staked(msg.sender, _amount);
     }
 
-    function unstake(uint256 _amount) external {
+    function unstake(uint _amount) external {
         require(msg.sender != address(0), "Invalid address");
         require(_amount > 0, "Unstaking amount must be greater than 0");
-        StakerInfo memory staker = stakers[msg.sender];
+        StakerInfo storage staker = stakers[msg.sender];
         require(staker.stakedAmount >= _amount, "Not enough tokens staked");
         require(
             block.timestamp >= staker.lastUpdated + lockPeriod,
@@ -108,11 +111,11 @@ contract W2RStaking is Ownable {
         );
 
         _updateReward(msg.sender);
-        uint256 reward = staker.reward;
-        uint256 unstakeAmount = _amount;
+        uint reward = staker.reward;
+        uint unstakeAmount = _amount;
 
         if (block.timestamp < staker.lastUpdated + lockPeriod) {
-            uint256 penaltyAmount = (_amount * earlyUnstakePenalty) / 100;
+            uint penaltyAmount = (_amount * earlyUnstakePenalty) / 100;
             unstakeAmount -= penaltyAmount;
         }
 
@@ -130,22 +133,22 @@ contract W2RStaking is Ownable {
     function claimReward() external {
         require(msg.sender != address(0), "Invalid address");
         require(stakers[msg.sender].stakedAmount > 0, "Nothing to claim");
-        StakerInfo memory staker = stakers[msg.sender];
+        StakerInfo storage staker = stakers[msg.sender];
         _updateReward(msg.sender);
-        uint256 reward = staker.reward;
+        uint reward = staker.reward;
         staker.reward = 0;
         //w2rToken.safeTransfer(msg.sender, reward);
         vaultW2R.distributeW2R(msg.sender, reward);
         emit RewardClaimed(msg.sender, reward);
     }
 
-    function _getReward(address _staker) private view returns (uint256) {
+    function _getReward(address _staker) private view returns (uint) {
         require(_staker != address(0), "Invalid address");
         require(stakers[_staker].stakedAmount > 0, "Nothing to get");
         StakerInfo memory staker = stakers[_staker];
-        uint256 stakingDuration = block.timestamp - staker.lastUpdated;
-        uint256 stakedUSDValue = getUSDValue(staker.stakedAmount);
-        uint256 reward = (stakedUSDValue * stakingDuration * rewardMultiplier) /
+        uint stakingDuration = block.timestamp - staker.lastUpdated;
+        uint stakedUSDValue = getUSDValue(staker.stakedAmount);
+        uint reward = (stakedUSDValue * stakingDuration * rewardMultiplier) /
             totalStakedValue;
         return reward;
     }
@@ -153,26 +156,26 @@ contract W2RStaking is Ownable {
     function _updateReward(address _staker) private {
         require(_staker != address(0), "Invalid address");
         require(stakers[_staker].stakedAmount > 0, "Nothing to update");
-        StakerInfo memory staker = stakers[_staker];
-        uint256 reward = _getReward(_staker);
+        StakerInfo storage staker = stakers[_staker];
+        uint reward = _getReward(_staker);
         staker.reward += reward;
         staker.lastUpdated = block.timestamp;
     }
 
-    function getUSDValue(uint256 _amount) public view returns (uint256) {
+    function getUSDValue(uint _amount) public view returns (uint) {
         require(_amount > 0, "Amount must be greater than 0");
         require(address(priceFeed) != address(0), "Invalid price feed address");
         (, int256 maticPrice, , , ) = priceFeed.latestRoundData();
         require(maticPrice > 0, "Invalid price data from Chainlink");
-        uint256 maticPriceInUSD = uint256(maticPrice) * 1e10; // Multiply by 1e10 to avoid decimals
-        uint256 w2rPriceInMATIC = (1 * 1e18) / 10; // 1 W2R = 0.1 MATIC
-        uint256 w2rPriceInUSD = (w2rPriceInMATIC * maticPriceInUSD) / 1e18; // Divide by 1e18 to remove the extra 1e10 factor
-        uint256 usdValue = (_amount * w2rPriceInUSD) / 1e18;
+        uint maticPriceInUSD = uint(maticPrice) * 1e10; // Multiply by 1e10 to avoid decimals
+        uint w2rPriceInMATIC = (1 * 1e18) / 10; // 1 W2R = 0.1 MATIC
+        uint w2rPriceInUSD = (w2rPriceInMATIC * maticPriceInUSD) / 1e18; // Divide by 1e18 to remove the extra 1e10 factor
+        uint usdValue = (_amount * w2rPriceInUSD) / 1e18;
         return usdValue;
     }
 
     function updateRewardMultiplier(
-        uint256 _newRewardMultiplier
+        uint _newRewardMultiplier
     ) external onlyOwner {
         require(
             _newRewardMultiplier > 0,

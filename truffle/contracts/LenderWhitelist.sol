@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC-BY-4.0
 pragma solidity ^0.8.17;
 
-// import ERC20.sol
 //import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 //import "@openzeppelin/contracts/access/Ownable.sol";
 import "../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -104,10 +103,13 @@ contract LenderWhitelist is Ownable {
         address _TW2RRenterNFT,
         IVaultW2R _vaultW2R
     ) {
-        require(_TW2RL != address(0));
-        require(_W2R != address(0));
-        require(_TW2RRenterNFT != address(0));
-        require(address(_vaultW2R) != address(0));
+        require(
+            _TW2RL != address(0) &&
+                _W2R != address(0) &&
+                _TW2RRenterNFT != address(0) &&
+                address(_vaultW2R) != address(0),
+            "bad address"
+        );
         vaultW2R = _vaultW2R;
         // set the address of the TwoWheels2RentLender contract
         TW2RL = I1TwoWheels2RentLender(_TW2RL);
@@ -117,7 +119,7 @@ contract LenderWhitelist is Ownable {
         TW2RRenterNFT = _TW2RRenterNFT;
     }
 
-     /**
+    /**
      * @notice Sets the RenterWhitelist contract address.
      * @param _renterWhitelist The address of the RenterWhitelist contract.
      */
@@ -144,16 +146,13 @@ contract LenderWhitelist is Ownable {
         string memory serial,
         string memory registration
     ) external {
-        require(!blacklistedAddresses[msg.sender], "blacklisted");
-        require(
-            !whitelistedAddresses[msg.sender].isWhitelisted,
-            "Already whitelisted"
-        );
+        require(!blacklistedAddresses[msg.sender], "bl");
+        require(!whitelistedAddresses[msg.sender].isWhitelisted, "wl");
         require(
             whitelistedAddresses[msg.sender].bikeShareContract == address(0),
-            "Already deployed"
+            "deployed"
         );
-        require(whitelistedAddresses[msg.sender].NFTId == 0, "Already minted");
+        require(whitelistedAddresses[msg.sender].NFTId == 0, "minted");
         require(
             bytes(name).length > 0 &&
                 bytes(brand).length > 0 &&
@@ -171,7 +170,7 @@ contract LenderWhitelist is Ownable {
             "Too long"
         );
         // check if the image is set
-        require(TW2RL.getIpfsHashLength(), "IPFS not set");
+        require(TW2RL.getIpfsHashLength(), "no IPFS");
         // set the BikeInfo struct
         I1TwoWheels2RentLender.BikeInfo memory bikeInfo = I1TwoWheels2RentLender
             .BikeInfo(name, brand, model, serial, registration);
@@ -197,14 +196,11 @@ contract LenderWhitelist is Ownable {
     */
 
     function deployBikeShareContract() private {
-        require(!blacklistedAddresses[msg.sender], "blacklisted");
-        require(
-            whitelistedAddresses[msg.sender].isWhitelisted,
-            "Not whitelisted"
-        );
+        require(!blacklistedAddresses[msg.sender], "bl");
+        require(whitelistedAddresses[msg.sender].isWhitelisted, "Not wl");
         require(
             whitelistedAddresses[msg.sender].bikeShareContract == address(0),
-            "Already deployed"
+            "deployed"
         );
         require(whitelistedAddresses[msg.sender].NFTId != 0, "Not minted");
         require(renterWhitelist != address(0), "not set");
@@ -233,12 +229,9 @@ contract LenderWhitelist is Ownable {
     */
 
     function removeAddressFromWhitelist() external {
-        require(!blacklistedAddresses[msg.sender], "blacklisted");
+        require(!blacklistedAddresses[msg.sender], "bl");
         // msg.sender is the address of the caller of this function
-        require(
-            whitelistedAddresses[msg.sender].isWhitelisted,
-            "Not whitelisted"
-        );
+        require(whitelistedAddresses[msg.sender].isWhitelisted, "Not wl");
         doRemoveStuff(msg.sender);
         // emit event
         emit LenderRemovedFromWhitelist(
@@ -253,7 +246,7 @@ contract LenderWhitelist is Ownable {
     */
 
     function addToBlacklist(address _address) external onlyOwner {
-        require(!blacklistedAddresses[_address], "blacklisted");
+        require(!blacklistedAddresses[_address], "bl");
         // if address was whitelisted
         if (whitelistedAddresses[_address].isWhitelisted) {
             require(doRemoveStuff(_address), "Error");
@@ -273,7 +266,7 @@ contract LenderWhitelist is Ownable {
     */
 
     function removeFromBlacklist(address _address) external onlyOwner {
-        require(blacklistedAddresses[_address], "Not blacklisted");
+        require(blacklistedAddresses[_address], "Not bl");
         // remove address from blacklist
         delete blacklistedAddresses[_address];
         // emit event
@@ -294,11 +287,11 @@ contract LenderWhitelist is Ownable {
         );
         // destroy bikeShare contract
         bikeShare = BikeShare(whitelistedAddresses[_address].bikeShareContract);
+        require(bikeShare.destroy(), "Can't destroy");
         require(
             vaultW2R.removeApprovedContract(address(bikeShare)),
             "Error removing"
         );
-        require(bikeShare.destroy(), "Can't destroy");
         // remove address from whitelist
         delete whitelistedAddresses[_address];
         numAddressesWhitelisted--;

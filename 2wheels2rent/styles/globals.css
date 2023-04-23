@@ -341,6 +341,12 @@ header nav {
   position: relative; /* Assurez-vous que la position est définie sur relative ou absolute */
 }
 
+.prices {
+  cursor: pointer;
+  float: right;
+  margin-top: 40px;
+}
+
 /* WELCOME COMPONENT */
 
 .welcome-container {
@@ -408,7 +414,7 @@ header nav {
 /* Message d'accueil */
 .welcome-message {
   background-color: #4caf50;
-  color: white;
+  color: rgb(238, 236, 236);
   font-size: 1.5rem;
   font-weight: 500;
   border-radius: 15px;
@@ -683,7 +689,6 @@ button:disabled {
 iframe {
   display: block;
   width: 100%;
-
   max-width: 1000px;
   margin: 0 auto;
   margin-bottom: 30px;
@@ -697,6 +702,31 @@ iframe {
 }
 .walletconnect-modal__header {
   padding-right: 60px !important;
+}
+
+.qr-code {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 360px;
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccc;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0 0 6px 6px rgba(58, 171, 227, 0.5);
+  border-radius: 10px;
+}
+
+#qr-code-reader {
+  height: auto !important;
+  margin: 0 auto;
+  margin-bottom: 20px;
+  box-shadow: #08b29c 0px 0px 10px 10px;
 }
 
 /* LENDER & RENTER  SUBSCRIPTION COMPONENT */
@@ -1187,6 +1217,15 @@ iframe {
     float: none;
     margin: 0 auto;
   }
+
+  .prices {
+    float: none;
+    margin-top: 10px;
+  }
+
+  #qr-code-reader {
+    width: 250px !important;
+  }
 }
 
 /* Affichage sur phablet */
@@ -1199,6 +1238,10 @@ iframe {
 
   nav ul {
     margin-right: 40px;
+  }
+
+  #qr-code-reader {
+    width: 400px !important;
   }
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ethers, Contract } from "ethers";
+import { ethers, Contract, utils } from "ethers";
 import { useWeb3Context } from "../context/";
 import useAddTokenToMetaMask from "../hooks/useAddTokenToMetamask";
 import W2R from "../contracts/W2R.json";
@@ -61,6 +61,8 @@ const Dex = () => {
   const [loading, setLoading] = useState(false);
   const [w2rToken, setW2RToken] = useState({});
   const [LPToken, setLPToken] = useState({});
+  // testing purpose
+  const [testAmount, setTestAmount] = useState(0);
 
   const validateConditions = () => {
     if (!address) return false;
@@ -499,6 +501,9 @@ const Dex = () => {
         .div(scaleFactor);
 
       setRewardRate(annualRewardRate.toString());
+      // testing purposes
+      const testW2Rtokens = await dexContract?.testAmount();
+      setTestAmount(Number(ethers.utils.formatEther(testW2Rtokens)).toFixed(2));
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -601,6 +606,43 @@ const Dex = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [network]);
 
+  const claimTokens = async () => {
+    if (!validateConditions()) return;
+    if (network?.chainId !== 80001)
+      showToast("Merci de vous connecter au réseau Polygon Mumbai", true);
+    try {
+      setLoading(true);
+      const response = await fetch("https://api.ipify.org?format=json");
+      const { ip } = await response.json();
+      // validate ip by regex
+      if (
+        !/^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/g.test(
+          ip
+        )
+      ) {
+        showToast(
+          "Blue skies🎶, Smiling at me♪♫, Nothing but blue skies♬♩, Do I see🎹"
+        );
+        setLoading(false);
+        return;
+      }
+      // Hash the IP address
+      const ipHash = utils.keccak256(utils.toUtf8Bytes(ip));
+      const tx = await dexContract.distributeTestW2R(ipHash);
+      await tx.wait();
+      await fetchBalances();
+      showToast("Tokens récupérés !");
+    } catch (error) {
+      console.error(error);
+      showToast(
+        "Erreur lors de la récupération des tokens, ou quota atteint",
+        true
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container dex-container">
       <div className="row" style={{ marginTop: "290px" }}>
@@ -617,6 +659,69 @@ const Dex = () => {
         {address ? (
           <>
             <div className="col-12">
+              {network?.chainId === 80001 && (
+                <>
+                  <hr />
+                  <h2 className="text-center fs-6">
+                    <span
+                      style={{
+                        color: "cyan",
+                        display: "inline-block",
+                        margin: "10px",
+                      }}
+                    >
+                      Attention, Projet en développement:
+                    </span>
+                    <br />
+                    Bien que le Dex soit pleinement fonctionnel testé en réseau
+                    local, il n&apos;est pas encore possible de l&apos;utiliser
+                    sur Mumbai, ne pouvant pas apporter la liquidité nécessaire
+                    en Matic de test (nous n&apos;avons droit qu'à une fraction
+                    par jour😅).
+                    <br />
+                    Pour l&apos;instant, vous pouvez récupérer des tokens W2R de
+                    test ({testAmount} par jour) pour utiliser
+                    l&apos;application, en cliquant ici :
+                    <button className="m-3" onClick={claimTokens}>
+                      Réclamer mes W2R de test
+                    </button>
+                    <br />
+                    N&apos;oubliez pas de récupérer vos faucets de test Matic
+                    pour les frais de gas sur
+                    <a
+                      href="https://mumbaifaucet.com/"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      {" "}
+                      https://mumbaifaucet.com/
+                    </a>
+                    <br />
+                    <span
+                      style={{
+                        color: "cyan",
+                        display: "inline-block",
+                        margin: "10px",
+                      }}
+                    >
+                      Tout ce qui suit l&apos;est donc pour information, mais
+                      demeure pleinement fonctionnel pour ceux qui testeront
+                      localement le projet, sur Ganache par exemple. Plus de
+                      précisions sur{" "}
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://github.com/Crypt0zauruS/Crypt0zauruS-Alyra-2Wheels2Rent-Project-"
+                      >
+                        <span style={{ color: "red", cursor: "pointer" }}>
+                          le GitHub du projet
+                        </span>
+                      </a>{" "}
+                      (ReadMe et script de déploiement)
+                    </span>
+                  </h2>
+                </>
+              )}
               <hr />
               {!loading ? (
                 <>
@@ -911,8 +1016,25 @@ const Dex = () => {
           <>
             <hr />
             <h1 className="text-center fs-3">
-              Connectez-vous pour échanger vos MATIC contre des W2R et
-              vice-versa ! Gagner des récompenses en apportant de la liquidité !
+              Connectez-vous pour réclamer gratuitement vos W2R de test !{" "}
+            </h1>
+            <br />
+            <h1 className="text-center fs-5">
+              Bien que le Dex soit pleinement fonctionnel testé en réseau local,
+              il n&apos;est pas encore possible de l&apos;utiliser sur Mumbai.
+              En attendant, vous pouvez réclamer vos W2R de test en connectant
+              votre wallet pour utiliser l'application.
+              <br />
+              Je songe toutefois à créer prochainement un token temporaire ERC20
+              "testMATIC" pour que vous puissiez tester le Dex en conditions
+              réelles. Ceci dit, cela demandera de réécrire les fonctions du DEX
+              car le MATIC n'est pas un ERC20.
+            </h1>
+            <hr />
+            <h1 className="text-center fs-5">
+              Lorsque le projet sera déployé sur le Mainnet, vous pourrez
+              échanger vos MATIC contre des W2R et vice-versa ! Et gagner des
+              récompenses en apportant de la liquidité !
             </h1>
           </>
         )}

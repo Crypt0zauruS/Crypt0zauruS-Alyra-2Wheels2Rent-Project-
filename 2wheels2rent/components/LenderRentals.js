@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import format from "date-fns/format";
 import fr from "date-fns/locale/fr";
+import Camera from "./Camera";
 import Loader from "./Loader";
 
 const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
@@ -9,6 +10,8 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAllRentals, setShowAllRentals] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [qrData, setQrData] = useState(null);
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -17,6 +20,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
   };
 
   const handleCancelRental = async () => {
+    if (rental.cantCancel) return;
     setLoading(true);
     try {
       const tx = await contract.cancelLending();
@@ -36,7 +40,6 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
               depositReturned
             )} remboursé`
           );
-          
         }
       );
       retrieveCurrentRental();
@@ -83,9 +86,14 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
   };
 
   const handleConfirmBikeTaken = async () => {
+    if (rental.cantCancel) return;
+    if (qrData?.length !== 30 || typeof qrData !== "string") {
+      showToast("Veuillez scanner un QR code valide", true);
+      return;
+    }
     setLoading(true);
     try {
-      const tx = await contract.confirmBikeTaken();
+      const tx = await contract.confirmBikeTaken(qrData);
       await tx.wait();
       contract.once("BikeTaken", (renter, date, lender) => {
         console.log("BikeTaken", renter, date, lender);
@@ -167,9 +175,14 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
   };
 
   const handleConfirmBikeReturned = async () => {
+    if (!rental.seemsReturned) return;
+    if (qrData?.length !== 30 || typeof qrData !== "string") {
+      showToast("Veuillez scanner un QR code valide", true);
+      return;
+    }
     setLoading(true);
     try {
-      const tx = await contract.confirmBikeReturned();
+      const tx = await contract.confirmBikeReturned(qrData);
       await tx.wait();
       contract.once(
         "BikeReturned",
@@ -187,7 +200,9 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
               returnDate.toNumber()
             )}. Le dépôt de ${ethers.utils.formatEther(
               depositReturned
-            )} lui a été remboursé. Votre récompense: ${Number(rental.reward)}`
+            )} lui a été remboursé. Votre récompense: ${Number(
+              rental.reward
+            )} W2R`
           );
         }
       );
@@ -200,6 +215,38 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
     }
   };
 
+  const qrCodeButton = () => (
+    <button
+      className="btn btn-warning"
+      style={{
+        margin: "0 auto",
+        display: "block",
+      }}
+      onClick={() => {
+        if (qrData) {
+          setQrData(null);
+          return;
+        }
+        setShowCamera(!showCamera);
+      }}
+    >
+      {!qrData
+        ? showCamera
+          ? "Annuler le scan"
+          : "Scanner le QR code"
+        : !showCamera && "Recommencer"}
+    </button>
+  );
+
+  const renderConfirmationToken = () => {
+    if (qrData && qrData.length === 30) {
+      return (
+        <p className="text-center fs-6 m-2">Token de confirmation: {qrData}</p>
+      );
+    }
+    return null;
+  };
+
   useEffect(() => {
     retrieveRentals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,6 +255,22 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
   const handleShowAllRentals = () => {
     setShowAllRentals(true);
   };
+
+  useEffect(() => {
+    setShowCamera(false);
+    if (qrData?.length == 30) {
+      console.log(qrData);
+      showToast(
+        `Token de confirmation scanné. Vous pouvez cliquer sur "Confirmer la location"`
+      );
+    } else {
+      setQrData(null);
+      qrData?.length !== 30 &&
+        qrData?.length > 0 &&
+        showToast("Token de confirmation invalide", true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrData]);
 
   return (
     <div className="modalContract">
@@ -229,7 +292,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                     style={{ background: "lightgrey" }}
                   >
                     {rental.date ? (
-                      <table className="table">
+                      <table className="table text-center">
                         <tbody>
                           <tr>
                             <th scope="row">Date</th>
@@ -270,58 +333,16 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                             {rental.isAccepted && <td>Location acceptée</td>}
                             {rental.isRefunded && <td>Location remboursée</td>}
                             {rental.seemsReturned && (
-                              <td>
-                                Velo déclaré retourné
-                                <br />
-                                <button
-                                  className="btn btn-danger"
-                                  onClick={handleConfirmBikeReturned}
-                                  disabled={loading}
-                                >
-                                  Confirmer ?
-                                </button>
-                              </td>
+                              <td>Velo déclaré retourné</td>
                             )}
 
                             {rental.isReturned && <td>Velo retourné</td>}
                           </tr>
-                          {rental.cantCancel ? (
+                          {rental.cantCancel && (
                             <tr>
-                              {" "}
                               <td>
                                 {!rental.seemsReturned &&
                                   "Annulation impossible"}
-                              </td>
-                            </tr>
-                          ) : (
-                            <tr>
-                              {" "}
-                              <td>
-                                Annulation possible
-                                <button
-                                  className="btn btn-warning m-2"
-                                  onClick={handleCancelRental}
-                                  disabled={loading}
-                                >
-                                  Annuler
-                                </button>
-                                <br />
-                                <p className="text-center">
-                                  Avant de confirmer, assurez-vous d&apos;avoir
-                                  convenu avec votre locataire de la date et
-                                  l&apos;heure de retour vers le{" "}
-                                  <span style={{ color: "red" }}>
-                                    {formatDate(rental.date + rental.duration)}.
-                                  </span>
-                                </p>
-                                <button
-                                  className="btn btn-success"
-                                  onClick={handleConfirmBikeTaken}
-                                  style={{ margin: "0 auto", display: "block" }}
-                                  disabled={loading}
-                                >
-                                  Confirmer La location
-                                </button>
                               </td>
                             </tr>
                           )}
@@ -332,6 +353,76 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                         Pas de location en ce moment
                       </h2>
                     )}
+                    {!rental.cantCancel && rental.date && (
+                      <>
+                        {!showCamera ? (
+                          <div>
+                            Annulation{" "}
+                            {Math.floor(Date.now() / 1000) > rental.date
+                              ? "suggérée car l'heure du RDV est dépassée"
+                              : "possible"}
+                            <button
+                              className="btn btn-warning m-2"
+                              onClick={handleCancelRental}
+                              disabled={loading || showCamera}
+                            >
+                              Annuler la location
+                            </button>
+                            <hr />
+                            <p className="text-center">
+                              Assurez-vous d&apos;avoir convenu avec votre
+                              locataire de la date et l&apos;heure de retour
+                              vers le{" "}
+                              <span style={{ color: "red" }}>
+                                {formatDate(rental.date + rental.duration)}
+                              </span>
+                              . Ensuite, scannez son QR code, puis confirmez la
+                              location. <br />
+                              Attention, le token de confirmation expire au bout
+                              d&apos;une minute.
+                            </p>
+                          </div>
+                        ) : (
+                          <Camera setQrData={setQrData} />
+                        )}
+                        {qrCodeButton()}
+                        <hr />
+                        <button
+                          className="btn btn-success"
+                          onClick={handleConfirmBikeTaken}
+                          style={{
+                            margin: "0 auto",
+                            display: "block",
+                          }}
+                          disabled={loading || qrData == null}
+                        >
+                          Confirmer La location
+                        </button>
+                        {renderConfirmationToken()}
+                      </>
+                    )}
+                    {rental.cantCancel &&
+                      rental.date &&
+                      rental.seemsReturned &&
+                      !rental.isReturned && (
+                        <>
+                          {showCamera && <Camera setQrData={setQrData} />}
+                          {qrCodeButton()}
+                          <hr />
+                          <button
+                            className="btn btn-danger"
+                            onClick={handleConfirmBikeReturned}
+                            style={{
+                              margin: "0 auto",
+                              display: "block",
+                            }}
+                            disabled={loading || qrData == null}
+                          >
+                            Confirmer le retour du vélo ?
+                          </button>
+                          {renderConfirmationToken()}
+                        </>
+                      )}
                   </div>
                 </div>
               </div>

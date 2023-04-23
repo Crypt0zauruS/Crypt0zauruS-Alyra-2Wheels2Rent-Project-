@@ -150,10 +150,7 @@ contract("Utilities", (accounts) => {
     });
 
     it("should revert if GPS data is empty", async () => {
-      await expectRevert(
-        utilities.setGPS("", "", { from: owner }),
-        "GPS empty"
-      );
+      await expectRevert(utilities.setGPS("", "", { from: owner }), "no GPS");
     });
 
     it("should revert if non-owner tries to activate the contract", async () => {
@@ -182,7 +179,7 @@ contract("Utilities", (accounts) => {
       await utilities.activate(latitude, longitude, { from: owner });
       await expectRevert(
         utilities.depositW2R(0, { from: owner }),
-        "Bad amount"
+        "bad amount"
       );
     });
 
@@ -194,7 +191,7 @@ contract("Utilities", (accounts) => {
       await W2RInstance.approve(utilities.address, 0, { from: owner });
       await expectRevert(
         utilities.depositW2R(amount, { from: owner }),
-        "Need approval"
+        "approval"
       );
     });
 
@@ -206,7 +203,7 @@ contract("Utilities", (accounts) => {
       await W2RInstance.approve(utilities.address, 99, { from: owner });
       await expectRevert(
         utilities.depositW2R(amount, { from: owner }),
-        "Need approval"
+        "approval"
       );
     });
 

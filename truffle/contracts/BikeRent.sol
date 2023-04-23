@@ -140,7 +140,15 @@ contract BikeRent is Utilities {
         bool isRefunded;
         bool seemsReturned;
         bool cantCancel;
+        string rentalToken;
     }
+
+    struct RentalToken {
+        uint time;
+        string rentalToken;
+    }
+
+    RentalToken private rentalToken;
 
     struct ProposalsMade {
         uint date; // time of the proposal
@@ -159,8 +167,9 @@ contract BikeRent is Utilities {
     }
     mapping(address => DailyCalls) private userProposalCalls;
     mapping(address => DailyCalls) private userRentalCalls;
+    mapping(address => DailyCalls) private userTokenCalls;
     uint private constant DAY_SECONDS = 24 hours;
-    uint private constant DAILY_CALL_LIMIT = 2;
+    uint private constant DAILY_CALL_LIMIT = 3;
 
     // import VaultW2R interface
     I4VaultW2R private vaultW2R;
@@ -184,11 +193,14 @@ contract BikeRent is Utilities {
         address _vaultW2R,
         address _whitelistLender
     ) Utilities(_renter, _W2Rtoken) {
-        require(_lenderNFT != address(0));
-        require(_whitelistRenter != address(0));
-        require(msg.sender == _whitelistRenter, "Only whitelist can deploy");
-        require(_vaultW2R != address(0));
-        require(_whitelistLender != address(0));
+        require(
+            _lenderNFT != address(0) &&
+                _whitelistRenter != address(0) &&
+                _vaultW2R != address(0) &&
+                _whitelistLender != address(0),
+            "bad address"
+        );
+        require(msg.sender == _whitelistRenter, "Only wl");
         lenderNFT = _lenderNFT;
         whitelistRenter = _whitelistRenter;
         vaultW2R = I4VaultW2R(_vaultW2R);
@@ -205,14 +217,14 @@ contract BikeRent is Utilities {
         LenderWhitelist = IlenderWhitelist(whitelistLender);
         require(
             LenderWhitelist.whitelistedAddresses(_bikeShareOwner).isWhitelisted,
-            "Not whitelisted"
+            "Not wl"
         );
         // check if msg.sender corresponding to bikeshare contract in struct of whitelisted _bikeShareOwner
         require(
             LenderWhitelist
                 .whitelistedAddresses(_bikeShareOwner)
                 .bikeShareContract == msg.sender,
-            "Not whitelisted"
+            "Not wl"
         );
         _;
     }
@@ -222,12 +234,11 @@ contract BikeRent is Utilities {
      */
 
     modifier renting() {
-        require(isRenting, "Not rented");
-        require(currentLender != address(0), "No lender");
+        require(isRenting && currentLender != address(0), "No lender");
         require(
             bytes(gpsData[address(this)].latitude).length > 0 &&
                 bytes(gpsData[address(this)].longitude).length > 0,
-            "GPS not set"
+            "no GPS"
         );
         _;
     }
@@ -248,6 +259,23 @@ contract BikeRent is Utilities {
         _;
     }
 
+    modifier validToken(string calldata lenderTempToken) {
+        require(msg.sender == currentLender, "Only lender");
+        require(
+            bytes(rentalToken.rentalToken).length == 30 &&
+                bytes(lenderTempToken).length == 30 &&
+                keccak256(abi.encodePacked(lenderTempToken)) ==
+                keccak256(abi.encodePacked(rentalToken.rentalToken)),
+            "Invalid"
+        );
+        require(
+            rentalToken.time > 0 &&
+                block.timestamp - rentalToken.time <= 1 minutes,
+            "expired"
+        );
+        _;
+    }
+
     /**
      * @notice Retrieve the number of rentals for a given renter's address.
      * @param renter The address of the renter.
@@ -263,20 +291,10 @@ contract BikeRent is Utilities {
      */
 
     function deleteOldProposals() private returns (bool) {
-        uint i = 0;
+        uint i;
         while (i < proposalsMade.length) {
             if (block.timestamp - proposalsMade[i].date > proposalDuration) {
-                for (uint j = i; j < proposalsMade.length - 1; j++) {
-                    address _bikeShareContract = proposalsMade[j].lender;
-                    uint date = proposalsMade[j].date;
-                    proposalsMade[j] = proposalsMade[j + 1];
-                    proposalsMade.pop();
-                    emit ProposalCancelled(
-                        address(this),
-                        date,
-                        _bikeShareContract
-                    );
-                }
+                cancelUselessProposals(i);
             } else {
                 i++;
             }
@@ -307,35 +325,35 @@ contract BikeRent is Utilities {
             "Invalid address"
         );
         require(deleteOldProposals());
-        for (uint i = 0; i < proposalsMade.length; i++) {
+        for (uint i; i < proposalsMade.length; i++) {
             if (proposalsMade[i].lender == _bikeShareContract) {
-                revert("Proposal already made");
+                revert("already made");
             }
         }
+        require(_rentalTime > 0 && _dateMin > 0 && _dateMax > 0, "bad values");
+        require(_dateMin > block.timestamp + 10000, "too soon");
         require(
-            _rentalTime > 0 && _dateMin > 0 && _dateMax > 0,
-            "Time too short"
+            _rentalTime % 1 days == 0 &&
+                _rentalTime >= minimalRental &&
+                _dateMax - _dateMin >= 3 hours &&
+                _dateMax - _dateMin <= 12 hours,
+            "bad time"
         );
-        require(_dateMin > block.timestamp + 10000, "Date too soon");
-        require(_rentalTime >= minimalRental, "Time too short");
-        require(_dateMax - _dateMin >= 3 hours, "Too short");
-        require(_dateMax - _dateMin <= 12 hours, "Too long");
-        require(proposalsMade.length < 3, "Only 3 proposals");
+        require(proposalsMade.length < 3, "Only 3");
         require(
             bytes(gpsData[address(this)].latitude).length > 0 &&
                 bytes(gpsData[address(this)].longitude).length > 0,
-            "GPS not set"
+            "no GPS"
         );
         bikeShare = IBikeShare(_bikeShareContract);
-        require(bikeShare.getProposalsLength() < 5, "Only 5 proposals");
-        require(_rentalTime <= bikeShare.maximumRental(), "Time too long");
+        require(bikeShare.getProposalsLength() < 5, "Only 5");
+        require(_rentalTime <= bikeShare.maximumRental(), "too long");
         uint _rate = bikeShare.rate();
         uint _depositAmount = bikeShare.depositAmount();
-        require(_rentalTime % 1 days == 0, "Not multiple of 1 day");
         require(
             W2R.balanceOf(address(this)) >=
                 _depositAmount + _rate * (_rentalTime / 1 days),
-            "Not enough W2R"
+            "Not enough"
         );
         // call the setProposal function of the BikeShare contract
         bikeShare.setProposal(
@@ -394,6 +412,13 @@ contract BikeRent is Utilities {
         return rentals[lender].length;
     }
 
+    function setRentalToken(
+        string calldata _rentalToken
+    ) external onlyOwner isActivated renting rateLimited(userTokenCalls) {
+        rentalToken.time = block.timestamp;
+        rentalToken.rentalToken = _rentalToken;
+    }
+
     /**
      * @notice Rent a bike after accepting a proposal
      * @dev The lender's BikeShare must have accepted a proposal, and this function is remotely called
@@ -417,18 +442,21 @@ contract BikeRent is Utilities {
         checkLenderNFT(_bikeShareOwner)
         rateLimited(userRentalCalls)
     {
-        require(isRenting == false, "Already renting");
-        require(currentLender == address(0), "Not renting");
-        require(msg.sender != address(0));
+        require(
+            !isRenting &&
+                currentLender == address(0) &&
+                msg.sender != address(0),
+            "bad renting"
+        );
         require(
             bytes(gpsData[address(this)].latitude).length > 0 &&
                 bytes(gpsData[address(this)].longitude).length > 0,
-            "GPS not set"
+            "no GPS"
         );
         uint _amountRequired = _rentalPrice + _depositAmount;
         require(
             W2R.balanceOf(address(this)) >= _amountRequired,
-            "Insufficient W2R"
+            "Insufficient"
         );
         bool proposalFound;
         uint i;
@@ -439,9 +467,9 @@ contract BikeRent is Utilities {
                 ProposalsMade memory proposal = proposalsMade[i];
                 require(
                     block.timestamp - proposal.date <= proposalDuration,
-                    "Proposal expired"
+                    "expired"
                 );
-                require(proposal.isAccepted == false, "Already accepted");
+                require(!proposal.isAccepted, "accepted");
                 require((_rentalPrice * rewardAmount * 100) >= 10000);
                 uint rentalPrice = _rentalPrice;
                 dateMax = proposal.rentalDateMax;
@@ -461,11 +489,13 @@ contract BikeRent is Utilities {
                         false,
                         false,
                         false,
-                        false
+                        false,
+                        ""
                     )
                 );
                 currentLender = msg.sender;
                 totalRentals++;
+                safeDate = rentalDate + rentalTime + 2 days;
                 W2R.safeTransfer(msg.sender, _amountRequired);
                 emit RentalStarted(
                     msg.sender,
@@ -481,19 +511,11 @@ contract BikeRent is Utilities {
                 break;
             }
         }
-        require(proposalFound, "No proposal found");
+        require(proposalFound, "No found");
         // delete proposal from the renter as it has been accepted
-        while (i < proposalsMade.length) {
-            if (proposalsMade[i].lender == currentLender) {
-                require(proposalsMade[i].isAccepted == false, "accepted");
-                cancelUselessProposals(i);
-                break;
-            } else {
-                i++;
-            }
-        }
+        cancelUselessProposals(i);
         //delete proposal which date is before the rental date
-        for (uint j = 0; j < proposalsMade.length; j++) {
+        for (uint j; j < proposalsMade.length; j++) {
             if (j != i && proposalsMade[j].date < (dateMax + rentalTime)) {
                 cancelUselessProposals(j);
             }
@@ -528,10 +550,10 @@ contract BikeRent is Utilities {
             _bikeShareContract != address(0) &&
                 _bikeShareContract != owner &&
                 _bikeShareContract != address(this),
-            "Invalid address"
+            "Invalid"
         );
-        require(proposalsMade.length > 0, "No proposals");
-        uint i = 0;
+        require(proposalsMade.length > 0, "No found");
+        uint i;
         while (i < proposalsMade.length) {
             if (proposalsMade[i].lender == _bikeShareContract) {
                 require(proposalsMade[i].isAccepted == false, "accepted");
@@ -550,14 +572,21 @@ contract BikeRent is Utilities {
      */
 
     function confirmBikeInHands(
-        address _bikeShareOwner
-    ) external isActivated checkLenderNFT(_bikeShareOwner) renting {
-        require(msg.sender == currentLender, "Only lender");
+        address _bikeShareOwner,
+        string calldata lenderTempToken
+    )
+        external
+        isActivated
+        checkLenderNFT(_bikeShareOwner)
+        renting
+        validToken(lenderTempToken)
+    {
         Rental storage rental = rentals[currentLender][
             rentals[currentLender].length - 1
         ];
-        require(rental.cantCancel == false, "Already taken");
+        require(!rental.cantCancel, "taken");
         rental.cantCancel = true;
+        rental.rentalToken = rentalToken.rentalToken;
         emit BikeTaken(
             currentLender,
             block.timestamp,
@@ -576,9 +605,15 @@ contract BikeRent is Utilities {
         Rental storage rental = rentals[currentLender][
             rentals[currentLender].length - 1
         ];
-        require(rental.cantCancel == true, "Not taken");
-        require(rental.seemsReturned == false, "Already seems returned");
-        require(rental.isReturned == false, "Already returned");
+        require(
+            rental.cantCancel && !rental.seemsReturned && !rental.isReturned,
+            "bad state"
+        );
+        require(
+            rentalToken.time > 0 &&
+                block.timestamp - rentalToken.time <= 1 minutes,
+            "expired"
+        );
         bikeShare = IBikeShare(currentLender);
         bikeShare.returnedBike(owner);
         rental.seemsReturned = true;
@@ -598,15 +633,19 @@ contract BikeRent is Utilities {
      */
 
     function returnConfirmed(
-        address _bikeShareOwner
-    ) external isActivated checkLenderNFT(_bikeShareOwner) renting {
-        require(msg.sender == currentLender, "Only current lender");
+        address _bikeShareOwner,
+        string calldata lenderTempToken
+    )
+        external
+        isActivated
+        checkLenderNFT(_bikeShareOwner)
+        renting
+        validToken(lenderTempToken)
+    {
         Rental storage rental = rentals[msg.sender][
             rentals[msg.sender].length - 1
         ];
-        require(rental.seemsReturned == true, "Seems Not returned");
-        require(rental.isReturned == false, "Already returned");
-        // set rental as returned
+        require(rental.seemsReturned && !rental.isReturned, "bad state");
         rental.isReturned = true;
         uint reward = rental.rewardExpected;
         // transfer reward from vault to this contract
@@ -640,6 +679,7 @@ contract BikeRent is Utilities {
         address _bikeShareOwner,
         bool _isCancelledByLender
     ) external isActivated checkLenderNFT(_bikeShareOwner) renting {
+        require(_refund > 0, "Invalid refund");
         handleRentalCancellation(
             _refund,
             _bikeShareOwner,
@@ -671,8 +711,7 @@ contract BikeRent is Utilities {
         Rental storage rental = rentals[currentLender][
             rentals[currentLender].length - 1
         ];
-        require(rental.cantCancel == false, "Cannot cancel");
-        require(rental.isReturned == false, "Already returned");
+        require(!rental.cantCancel && !rental.isReturned, "bad state");
         if (_refund == 0) {
             uint basis = rental.depositAmount + rental.rentalPrice;
             _refund = block.timestamp >= rental.date - 2 hours
@@ -680,9 +719,9 @@ contract BikeRent is Utilities {
                 : basis;
         }
         if (_bikeShareOwner != address(0)) {
-            require(msg.sender == currentLender, "Only current lender");
+            require(msg.sender == currentLender, "Only lender");
         } else {
-            if (_isCancelledByLender == false) {
+            if (!_isCancelledByLender) {
                 bikeShare = IBikeShare(currentLender);
                 bikeShare.cancelledRenting(owner);
             }
@@ -690,6 +729,7 @@ contract BikeRent is Utilities {
         // set rental as returned
         rental.isReturned = true;
         isRenting = false;
+        safeDate = block.timestamp;
         address lender = currentLender;
         currentLender = address(0);
         emit RentalCancelled(
@@ -708,7 +748,7 @@ contract BikeRent is Utilities {
 
     function withdrawFunds(uint _amount) external isActivated onlyOwner {
         require(_amount > 0, "Not 0");
-        require(W2R.balanceOf(address(this)) >= _amount, "Insufficient W2R");
+        require(W2R.balanceOf(address(this)) >= _amount, "Insufficient");
         W2R.safeTransfer(msg.sender, _amount);
         emit W2Rwithdrawed(msg.sender, _amount, block.timestamp, address(this));
     }
@@ -722,17 +762,8 @@ contract BikeRent is Utilities {
      */
 
     function destroy() external returns (bool) {
-        require(msg.sender == whitelistRenter, "Only whitelistContract");
-        // if is renting and rental duration is not over, revert
-        if (isRenting && currentLender != address(0)) {
-            Rental memory rental = rentals[currentLender][
-                rentals[currentLender].length - 1
-            ];
-            require(
-                block.timestamp > rental.date + rental.rentalTime,
-                "Rental Not over"
-            );
-        }
+        require(msg.sender == whitelistRenter, "Only whitelist");
+        require(block.timestamp >= safeDate, "safe delay");
         isDeactivated = true;
         isDestroyed = true;
         if (W2R.balanceOf(address(this)) > 0) {

@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { Web3Button } from "../components/";
 import { useWeb3Context } from "../context/";
 import { useScrollBlock } from "../hooks/useScrollBlock";
+import MaticPrice from "../components/MaticPrice";
 
 export default function Header() {
   const myNav = useRef<HTMLDivElement>(null);
@@ -74,6 +75,7 @@ export default function Header() {
                   <span style={{ color: "rgb(8, 201, 118)" }}>2</span>
                   <span style={{ color: "rgb(8, 88, 162)" }}>Rent</span> 🚲
                 </Link>
+                {address && <MaticPrice />}
               </h1>
             </div>
             {/* menu tablette PC */}

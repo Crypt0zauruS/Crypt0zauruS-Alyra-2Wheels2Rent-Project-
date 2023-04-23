@@ -10,6 +10,7 @@ import useImageClassifier from "../hooks/useImageClassifier";
 import SpecialLoader from "../components/SpecialLoader";
 import Loader from "../components/Loader";
 import DOMPurify from "isomorphic-dompurify";
+import Link from "next/link";
 import { Contract } from "ethers";
 import LenderWhitelist from "../contracts/LenderWhitelist.json";
 import RenterWhitelist from "../contracts/RenterWhitelist.json";
@@ -346,7 +347,44 @@ export default function Home() {
     <div style={{ paddingTop: "350px" }}>
       <div className="container-fluid">
         {!address && (
-          <div className="row welcome-message">
+          <div className="welcome-message">
+            🎉 Bienvenue cher visiteur ! <hr />
+            2Wheels2Rent est une application décentralisée de location de vélos
+            entre particuliers.
+            <br />
+            Bien qu&apos;elle soit encore en développement sur la blockchain de
+            test Mumbai, vous pouvez déjà vous inscrire et profiter de toutes
+            les fonctionnalités de l&apos;application.🚴🏽‍♀️🚀
+            <hr />
+            Attention, en cas de mise à jour majeure, vous devrez vous
+            réinscrire. Bien sûr, vous pouvez récupérer gratuitement des W2R de
+            test sur notre{" "}
+            <Link href="/dex">
+              <span
+                style={{
+                  fontWeight: "bold",
+                  fontSize: "1.5rem",
+                  color: "cyan",
+                }}
+              >
+                DEX
+              </span>
+            </Link>
+            😉
+            <br />
+            Les développeurs sont plus que bienvenus pour me suggérer des
+            améliorations ou des bugs à corriger via{" "}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://github.com/Crypt0zauruS/Crypt0zauruS-Alyra-2Wheels2Rent-Project-"
+            >
+              <span style={{ color: "cyan", cursor: "pointer" }}>
+                le GitHub du projet
+              </span>
+            </a>
+            🤓
+            <br />
             Veuillez connecter votre wallet sur Polygon Mumbai pour accéder à
             l&apos;application ! 👆🏽
           </div>

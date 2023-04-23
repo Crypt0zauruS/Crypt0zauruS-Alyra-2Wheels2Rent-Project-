@@ -13,6 +13,14 @@ import "./Utilities.sol";
 
 interface I3VaultW2R {
     function distributeW2R(address receiver, uint256 amount) external;
+
+    function receiveDepositsWhenDestroyed(
+        address _lenderContractOwner,
+        address _renterContract,
+        address _renterContractOwner,
+        uint _date,
+        uint _amount
+    ) external;
 }
 
 /**
@@ -38,6 +46,8 @@ interface IrenterWhitelist {
 */
 
 interface IBikeRent {
+    function owner() external view returns (address);
+
     function rentBike(
         address _bikeShareContract,
         uint _rentalPrice,
@@ -52,9 +62,15 @@ interface IBikeRent {
         bool _isCancelledByLender
     ) external;
 
-    function returnConfirmed(address _bikeShareOwner) external;
+    function returnConfirmed(
+        address _bikeShareOwner,
+        string calldata lenderTempToken
+    ) external;
 
-    function confirmBikeInHands(address _bikeShareOwner) external;
+    function confirmBikeInHands(
+        address _bikeShareOwner,
+        string calldata lenderTempToken
+    ) external;
 }
 
 /**
@@ -153,6 +169,7 @@ contract BikeShare is Utilities {
         bool seemsReturned;
         bool cantCancel;
         bool isReturned;
+        string rentalToken;
     }
 
     I3VaultW2R private vaultW2R;
@@ -190,13 +207,13 @@ contract BikeShare is Utilities {
         address _vaultW2R,
         address _whitelistRenter
     ) Utilities(_lender, _W2Rtoken) {
-        require(_renterNFT != address(0));
         require(
-            msg.sender == _whitelistLender,
-            "Only the whitelist can deploy"
+            _renterNFT != address(0) &&
+                _vaultW2R != address(0) &&
+                _whitelistRenter != address(0),
+            "bad address"
         );
-        require(_vaultW2R != address(0));
-        require(_whitelistRenter != address(0));
+        require(msg.sender == _whitelistLender, "Only whitelist");
         renterNFT = _renterNFT;
         whitelistLender = _whitelistLender;
         vaultW2R = I3VaultW2R(_vaultW2R);
@@ -233,12 +250,11 @@ contract BikeShare is Utilities {
     */
 
     modifier lending() {
-        require(isRented, "Not rented");
-        require(currentRenter != address(0), "No lender");
+        require(isRented && currentRenter != address(0), "bad lending");
         require(
             bytes(rentalGPSData[currentRenter].latitude).length > 0 &&
                 bytes(rentalGPSData[currentRenter].longitude).length > 0,
-            "GPS not set"
+            "no GPS"
         );
         _;
     }
@@ -320,7 +336,8 @@ contract BikeShare is Utilities {
                 false,
                 false,
                 false,
-                false
+                false,
+                ""
             )
         );
     }
@@ -351,31 +368,27 @@ contract BikeShare is Utilities {
         string calldata _longitude
     ) external isActivated checkRenterNFT(_bikeRentOwner) {
         // require(deleteOldProposals());
-        for (uint i = 0; i < proposals.length; i++) {
+        for (uint i; i < proposals.length; i++) {
             if (proposals[i]._renter == msg.sender) {
                 revert("Already proposed");
             }
         }
         require(proposals.length <= 5, "Too many");
-        // check rentalTime is modulo 1 days
         require(
-            _rentalTime % 1 days == 0 && _rentalTime >= 1 days,
-            "Bad rental time"
+            _rentalTime % 1 days == 0 &&
+                _rentalTime >= minimalRental &&
+                _rentalTime <= maximumRental,
+            "bad rental time"
         );
         require(
             _dateMin > block.timestamp + 2 hours &&
                 _dateMax - _dateMin <= 12 hours,
-            "Bad dates"
+            "bad dates"
         );
-        require(
-            _rentalTime >= minimalRental && _rentalTime <= maximumRental,
-            "Too short"
-        );
-        require(_rate > 0);
-        require(depositAmount > 0);
+        require(_rate > 0 && depositAmount > 0, "bad value");
         require(
             bytes(_latitude).length > 0 && bytes(_longitude).length > 0,
-            "GPS not set"
+            "no GPS"
         );
 
         Proposal memory proposal = Proposal(
@@ -432,16 +445,10 @@ contract BikeShare is Utilities {
         onlyOwner
         returns (bool)
     {
-        uint i = 0;
+        uint i;
         while (i < proposals.length) {
             if (block.timestamp - proposals[i].date > proposalDuration) {
-                for (uint j = i; j < proposals.length - 1; j++) {
-                    address renter = proposals[j]._renter;
-                    uint date = proposals[j].date;
-                    proposals[j] = proposals[j + 1];
-                    proposals.pop();
-                    emit ProposalCancelled(renter, date, address(this));
-                }
+                cancelUselessProposals(i);
             } else {
                 i++;
             }
@@ -464,18 +471,19 @@ contract BikeShare is Utilities {
         string calldata _latitude,
         string calldata _longitude
     ) external isActivated onlyOwner {
-        require(!isRented, "Already rented");
-        require(_meetingHour > 0);
+        require(
+            !isRented && _meetingHour > 0 && proposals.length > 0,
+            "bad values"
+        );
         require(
             _bikeRent != address(0) &&
                 _bikeRent != owner &&
                 _bikeRent != address(this),
             "Invalid address"
         );
-        require(proposals.length > 0, "No proposals");
         require(
             bytes(_latitude).length > 0 && bytes(_longitude).length > 0,
-            "GPS not set"
+            "no GPS"
         );
         bool proposalFound;
         uint i;
@@ -501,13 +509,6 @@ contract BikeShare is Utilities {
                     "Not enough W2R"
                 );
                 uint meetingHour = _meetingHour;
-                setRentalStruct(
-                    meetingHour,
-                    proposalLoop._renter,
-                    rentalTime,
-                    rentalPrice,
-                    proposalLoop._depositAmount
-                );
                 bikeRent.rentBike(
                     owner,
                     rentalPrice,
@@ -515,15 +516,23 @@ contract BikeShare is Utilities {
                     rentalTime,
                     meetingHour
                 );
+                setRentalStruct(
+                    meetingHour,
+                    proposalLoop._renter,
+                    rentalTime,
+                    rentalPrice,
+                    proposalLoop._depositAmount
+                );
                 proposalLoop._isAccepted = true;
                 isRented = true;
+                safeDate = meetingHour + rentalTime + 2 days;
                 currentRenter = proposalLoop._renter;
                 rentalGPSData[currentRenter] = RentalGPS(_latitude, _longitude);
                 totalRentals++;
                 emit BikeRented(
                     proposalLoop._renter,
                     rentalTime,
-                    _meetingHour,
+                    meetingHour,
                     proposalLoop._rate,
                     proposalLoop._depositAmount,
                     rentalPrice
@@ -534,16 +543,9 @@ contract BikeShare is Utilities {
         }
         require(proposalFound, "not found");
         // delete proposal from the renter as it has been accepted
-        while (i < proposals.length) {
-            if (proposals[i]._renter == currentRenter) {
-                cancelUselessProposals(i);
-                break;
-            } else {
-                i++;
-            }
-        }
+        cancelUselessProposals(i);
         //delete proposal which date is before the rental date
-        for (uint j = 0; j < proposals.length; j++) {
+        for (uint j; j < proposals.length; j++) {
             if (j != i && proposals[j].date < (dateMax + rentalTime)) {
                 cancelUselessProposals(j);
             }
@@ -578,7 +580,7 @@ contract BikeShare is Utilities {
             "Invalid address"
         );
         require(proposals.length > 0, "No proposals");
-        uint i = 0;
+        uint i;
         while (i < proposals.length) {
             if (proposals[i]._renter == _bikerent) {
                 require(proposals[i]._isAccepted == false, "accepted");
@@ -594,16 +596,19 @@ contract BikeShare is Utilities {
      * @dev Call the confirmBikeInHands function of the BikeRent contract.
      * @notice Confirms the bike has been taken by the renter.
      */
-    function confirmBikeTaken() external isActivated onlyOwner lending {
+    function confirmBikeTaken(
+        string calldata _rentalToken
+    ) external isActivated onlyOwner lending {
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
         ];
         // DEACTIVATED FOR TESTING AND DEMO PURPOSES
         //require(rental.date <= block.timestamp, "Must be in the past");
-        require(rental.cantCancel == false, "already taken");
-        rental.cantCancel = true;
+        require(!rental.cantCancel, "taken");
+        require(bytes(_rentalToken).length == 30, "invalid token");
         bikeRent = IBikeRent(currentRenter);
-        bikeRent.confirmBikeInHands(owner);
+        bikeRent.confirmBikeInHands(owner, _rentalToken);
+        rental.cantCancel = true;
         emit BikeTaken(
             currentRenter,
             block.timestamp,
@@ -625,7 +630,7 @@ contract BikeShare is Utilities {
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
         ];
-        require(rental.seemsReturned == false, "seems returned");
+        require(!rental.seemsReturned, "seems returned");
         rental.seemsReturned = true;
         emit RentalSeemsReturned(msg.sender, block.timestamp, address(this));
     }
@@ -634,20 +639,21 @@ contract BikeShare is Utilities {
      * @notice Confirms definitaly the bike has been returned and the deposit is returned to the renter.
      * @dev Call the returnConfirmed function of the BikeRent contract.
      */
-    function confirmBikeReturned() external isActivated onlyOwner lending {
+    function confirmBikeReturned(
+        string calldata _rentalToken
+    ) external isActivated onlyOwner lending {
+        require(bytes(_rentalToken).length == 30, "invalid token");
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
         ];
-        require(rental.seemsReturned == true, "Seems not returned");
-        // check if rental is not already returned
-        require(rental.isReturned == false, "Already returned");
+        require(rental.seemsReturned && !rental.isReturned, "bad state");
         uint depositReturned = rental.depositAmount;
         require(
             W2R.balanceOf(address(this)) >= depositReturned,
-            "Insufficient W2R"
+            "Insufficient"
         );
         bikeRent = IBikeRent(currentRenter);
-        bikeRent.returnConfirmed(owner);
+        bikeRent.returnConfirmed(owner, _rentalToken);
         // set rental as returned
         rental.isReturned = true;
         uint reward = rental.rewardExpected;
@@ -695,11 +701,10 @@ contract BikeShare is Utilities {
         Rental storage rental = rentals[currentRenter][
             rentals[currentRenter].length - 1
         ];
-        require(rental.cantCancel == false, "Cannot cancel");
-        require(rental.isRefunded == false, "Already refunded");
+        require(!rental.cantCancel && !rental.isRefunded, "bad state");
         uint _refund;
         uint basis = rental.depositAmount + rental.rentalPrice;
-        if (isCalledByRenter == true) {
+        if (isCalledByRenter) {
             require(msg.sender == currentRenter, "Only renter");
         }
         _refund = isCalledByRenter &&
@@ -707,8 +712,8 @@ contract BikeShare is Utilities {
             block.timestamp >= rental.date - 2 hours
             ? basis - (rental.rentalPrice * 1000) / 10000
             : basis;
-        require(W2R.balanceOf(address(this)) >= _refund, "Insufficient W2R");
-        if (isCalledByRenter == false) {
+        require(W2R.balanceOf(address(this)) >= _refund, "Insufficient");
+        if (!isCalledByRenter) {
             bikeRent = IBikeRent(currentRenter);
             bikeRent.cancelledLending(_refund, owner, true);
         }
@@ -716,6 +721,7 @@ contract BikeShare is Utilities {
         rental.isRefunded = true;
         // set bike as not rented if no revert
         isRented = false;
+        safeDate = block.timestamp;
         address current = currentRenter;
         currentRenter = address(0);
         W2R.safeTransfer(current, _refund);
@@ -735,14 +741,18 @@ contract BikeShare is Utilities {
      */
 
     function withdrawFunds(uint _amount) external isActivated onlyOwner {
-        require(_amount > 0, "Must be greater than 0");
+        require(_amount > 0, "Not 0");
         uint W2Rbalance = W2R.balanceOf(address(this));
-        uint deposit;
+        uint toKeep;
         if (isRented && currentRenter != address(0)) {
-            deposit = rentals[currentRenter][rentals[currentRenter].length - 1]
-                .depositAmount;
+            Rental memory rental = rentals[currentRenter][
+                rentals[currentRenter].length - 1
+            ];
+            toKeep = rental.cantCancel == true
+                ? rental.depositAmount
+                : rental.amountAsked;
         }
-        require(W2Rbalance - deposit > _amount, "Not enough");
+        require(W2Rbalance - toKeep > _amount, "Not enough");
         //transfer W2R to owner
         W2R.safeTransfer(owner, _amount);
         emit W2Rwithdrawed(msg.sender, _amount, block.timestamp, address(this));
@@ -750,22 +760,30 @@ contract BikeShare is Utilities {
 
     /**
      * @notice Destroy the contract, W2R funds are transfered to the owner.
+     * In case of a rental, destruction is only possible after the rental time + 2 days, in case of a delay.
+     * After this delay, and if the bike has not been returned, lender can destroy the contract but deposit will be send to the vault,
+     * waiting to know who failed (renter stole the bike, or lender went away to keep the deposit)
+     * So, this functionnality prevents the use of the destruction function to steal the deposit.
      * @dev This function is called by the whitelist contract to destroy the contract
-     * not really destroyed as the selfdestruct expected to be used will be deprecated soon
-     * but usable anymore
+     * not really destroyed as the selfdestruct expected to be used is deprecated
      * @return true if the contract is successfully destroyed, false otherwise
      */
     function destroy() external returns (bool) {
-        require(msg.sender == whitelistLender, "Only whitelistContract");
-        // if bike is rented and rental duration is not over, revert
+        require(msg.sender == whitelistLender, "Only whitelist");
+        require(block.timestamp >= safeDate, "safe delay");
         if (isRented && currentRenter != address(0)) {
             Rental memory rental = rentals[currentRenter][
                 rentals[currentRenter].length - 1
             ];
-            require(
-                block.timestamp > rental.date + rental.rentalTime,
-                "Rental not over"
+            bikeRent = IBikeRent(currentRenter);
+            vaultW2R.receiveDepositsWhenDestroyed(
+                owner,
+                currentRenter,
+                bikeRent.owner(),
+                block.timestamp,
+                rental.depositAmount
             );
+            W2R.safeTransfer(address(vaultW2R), rental.depositAmount);
         }
         isDeactivated = true;
         isDestroyed = true;

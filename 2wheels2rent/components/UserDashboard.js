@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useWeb3Context } from "../context/";
 import SpecialLoader from "./SpecialLoader";
 import Loader from "./Loader";
@@ -168,6 +169,18 @@ const UserDashboard = ({ props }) => {
     }
     setLoaderContract(true);
     try {
+      const safeDate = await contract.safeDate();
+      if (Number(safeDate) > Date.now() / 1000) {
+        showToast(
+          "Vous ne pouvez pas vous désinscrire avant un délai de 2 jours après la fin de votre dernière location. Vous pourrez le faire le " +
+            new Date(Number(safeDate) * 1000).toLocaleDateString("fr-FR") +
+            "à" +
+            new Date(Number(safeDate) * 1000).toLocaleTimeString("fr-FR") +
+            ". Vous pouvez peut-être annuler votre location si le vélo n'a pas encore été pris, puis vous désinscrire.",
+          true
+        );
+        return;
+      }
       const balance = await w2Rcontract.balanceOf(userInfos.contractAddress);
       const decimals = await w2Rcontract.decimals();
       const formattedBalance = Number(
@@ -375,7 +388,9 @@ const UserDashboard = ({ props }) => {
                 <h2 className="text-center fs-4">
                   Bienvenue {name} ! <br />
                   W2R sur votre wallet:{" "}
-                  <span style={{ fontStyle: "italic" }}>{w2rUserBalance}</span>
+                  <span style={{ fontStyle: "italic", color: "orange" }}>
+                    {w2rUserBalance}
+                  </span>{" "}
                   {window?.ethereum &&
                     network.chainId === 80001 &&
                     w2rToken && (
@@ -387,6 +402,18 @@ const UserDashboard = ({ props }) => {
                         Ajouter {w2rToken?.tokenSymbol} à MetaMask
                       </button>
                     )}
+                  <br />
+                  Vous pouvez acquérir des W2R sur notre{" "}
+                  <Link href="/dex">
+                    <span
+                      style={{
+                        fontWeight: "bold",
+                        color: "orange",
+                      }}
+                    >
+                      DEX
+                    </span>
+                  </Link>
                 </h2>
                 <hr />
                 <p>

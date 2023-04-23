@@ -26,6 +26,7 @@ contract("Rental Steps", (accounts) => {
   let bikeRentAddress;
   let amount;
   let VaultW2RInstance;
+  const token = "abcdefghijklmnopqrstuvwxyz1234";
   beforeEach(async () => {
     // Deploy W2R
     W2RInstance = await W2R.new(initialSupply, { from: owner });
@@ -191,7 +192,8 @@ contract("Rental Steps", (accounts) => {
 
   describe("Taking and Returning a Bike", () => {
     it("should confirm bike taken", async () => {
-      await bikeShare.confirmBikeTaken({ from: owner });
+      await bikeRent.setRentalToken(token, { from: renter });
+      await bikeShare.confirmBikeTaken(token, { from: owner });
 
       const bikeShareEvents = await bikeShare.getPastEvents("BikeTaken");
       expect(bikeShareEvents.length).to.equal(1);
@@ -203,8 +205,9 @@ contract("Rental Steps", (accounts) => {
     });
 
     it("should handle bike return process", async () => {
-      await bikeShare.confirmBikeTaken({ from: owner });
-
+      await bikeRent.setRentalToken(token, { from: renter });
+      await bikeShare.confirmBikeTaken(token, { from: owner });
+      await bikeRent.setRentalToken(token, { from: renter });
       await bikeRent.returnBike({ from: renter });
 
       const bikeRentEvents = await bikeRent.getPastEvents(
@@ -219,7 +222,7 @@ contract("Rental Steps", (accounts) => {
       expect(bikeShareEvents.length).to.equal(1);
       expect(bikeShareEvents[0].returnValues.renter).to.equal(bikeRent.address);
 
-      await bikeShare.confirmBikeReturned({ from: owner });
+      await bikeShare.confirmBikeReturned(token, { from: owner });
 
       const bikeShareReturnedEvents = await bikeShare.getPastEvents(
         "BikeReturned"
@@ -256,53 +259,56 @@ contract("Rental Steps", (accounts) => {
       // you have to deploy the entire project again after decommenting the require in the bikeShare contract to test it.
       // It has been deactivated for demonstration purposes
       //
-      // Line 488: require(rental.date <= block.timestamp, "Must be in the past");
+      // Line 605: require(rental.date <= block.timestamp, "Must be in the past");
       //
       // await expectRevert(
-      //   bikeShare.confirmBikeTaken({ from: owner }),
+      //   bikeShare.confirmBikeTaken(token,{ from: owner }),
       //  "Must be in the past"
       //);
     });
 
     it("should not allow confirming bike taken if already taken", async () => {
       try {
-        await bikeShare.confirmBikeTaken({ from: owner });
-        await bikeShare.confirmBikeTaken({ from: owner });
-        assert.fail("already taken");
+        await bikeRent.setRentalToken(token, { from: renter });
+        await bikeShare.confirmBikeTaken(token, { from: owner });
+        await bikeShare.confirmBikeTaken(token, { from: owner });
+        assert.fail("taken");
       } catch (error) {
-        const revertFound = error.message.search("already taken") >= 0;
-        assert(revertFound, `Expected "already taken", got ${error} instead`);
+        const revertFound = error.message.search("taken") >= 0;
+        assert(revertFound, `Expected "taken", got ${error} instead`);
       }
     });
 
     it("should not allow returning the bike if not taken", async () => {
-      await expectRevert(bikeRent.returnBike({ from: renter }), "Not taken");
+      await expectRevert(bikeRent.returnBike({ from: renter }), "bad state");
     });
 
     it("should not allow confirming bike returned if not declared as returned", async () => {
       // Confirm bike taken
-      await bikeShare.confirmBikeTaken({ from: owner });
+      await bikeRent.setRentalToken(token, { from: renter });
+      await bikeShare.confirmBikeTaken(token, { from: owner });
 
       await expectRevert(
-        bikeShare.confirmBikeReturned({ from: owner }),
-        "Seems not returned"
+        bikeShare.confirmBikeReturned(token, { from: owner }),
+        "bad state"
       );
     });
 
     it("should not allow confirming bike returned if already returned", async () => {
       try {
-        await bikeShare.confirmBikeTaken({ from: owner });
-
+        await bikeRent.setRentalToken(token, { from: renter });
+        await bikeShare.confirmBikeTaken(token, { from: owner });
+        await bikeRent.setRentalToken(token, { from: renter });
         // Renter declares bike returned
         await bikeRent.returnBike({ from: renter });
 
         // Lender confirms bike returned
-        await bikeShare.confirmBikeReturned({ from: owner });
-        await bikeShare.confirmBikeReturned({ from: owner });
-        assert.fail("Not rented");
+        await bikeShare.confirmBikeReturned(token, { from: owner });
+        await bikeShare.confirmBikeReturned(token, { from: owner });
+        assert.fail("bad lending");
       } catch (error) {
-        const revertFound = error.message.search("Not rented") >= 0;
-        assert(revertFound, `Expected "Not rented", got ${error} instead`);
+        const revertFound = error.message.search("bad lending") >= 0;
+        assert(revertFound, `Expected "bad lending", got ${error} instead`);
       }
     });
   });

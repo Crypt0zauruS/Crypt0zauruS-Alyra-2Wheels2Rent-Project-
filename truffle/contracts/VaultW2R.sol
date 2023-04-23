@@ -22,6 +22,21 @@ contract VaultW2R is Ownable {
 
     mapping(address => bool) private approvedContracts;
 
+    // in case a bikeShare contract is destroyed although rental dispute is still ongoing, deposit is placed here, waiting for the dispute to be resolved
+    mapping(address => DepositsWhenDestroyed) private depositsWhenDestroyed;
+
+    struct DepositsWhenDestroyed {
+        address lenderContractOwner;
+        address renterContract;
+        address renterContractOwner;
+        uint date;
+        uint amount;
+        bool sentToLender;
+        bool sentToRenter;
+    }
+
+    uint public totalDepositsWhenDestroyed;
+
     event W2RTransferred(address indexed receiver, uint256 amount);
     event W2RWithdrawn(address indexed receiver, uint256 amount);
     event ContractApproved(address indexed contractAddress, bool status);
@@ -39,6 +54,83 @@ contract VaultW2R is Ownable {
         );
 
         W2R = IERC20(_w2rToken);
+    }
+
+    /**
+    @notice A bikeShare contract can be destroyed after 2 days since the end of the rental period, or immediately if there is no rental
+    The wait of 2 days is to give the renter time to return bike in case of delay or dispute
+    After this time, if the lender has not received the bike and want to destroy the bikeShare contract,
+    deposit will be placed here.
+    @notice It's not mandatory to destroy the bikeShare contract, it's in case the lender wants to destroy it: deposit
+    must be saved umtil the dispute is resolved
+    @param _lenderContractOwner The address of the lender contract owner
+    @param _renterContract The address of the renter contract
+    @param _renterContractOwner The address of the renter contract owner
+    @param _date The date of the deposit
+    @param _amount The amount of the deposit
+    */
+    function receiveDepositsWhenDestroyed(
+        address _lenderContractOwner,
+        address _renterContract,
+        address _renterContractOwner,
+        uint _date,
+        uint _amount
+    ) external {
+        require(
+            approvedContracts[msg.sender],
+            "Caller is not an approved contract"
+        );
+        require(
+            _lenderContractOwner != address(0) &&
+                _renterContract != address(0) &&
+                _renterContractOwner != address(0)
+        );
+        require(_date > 0 && _amount > 0);
+        depositsWhenDestroyed[msg.sender] = DepositsWhenDestroyed(
+            _lenderContractOwner,
+            _renterContract,
+            _renterContractOwner,
+            _date,
+            _amount,
+            false,
+            false
+        );
+        totalDepositsWhenDestroyed += _amount;
+    }
+
+    /**
+    @notice Send deposit to either lender or renter.
+    @param _lender The address of the lender.
+    @param _sentToLender Set to true if deposit is to be sent to the lender, false if it is to be sent to the renter.
+    This function is only callable by the owner of the contract.
+    It first checks if the lender address is not zero and if the deposit has not been sent yet.
+    Then it checks if the deposit exists and updates the deposit status based on the _sentToLender parameter.
+    Finally, it updates the totalDepositsWhenDestroyed and transfers the deposit amount to the appropriate recipient.
+    */
+    function sentDeposit(
+        address _lender,
+        bool _sentToLender
+    ) external onlyOwner {
+        require(_lender != address(0), "Lender address cannot be zero");
+        DepositsWhenDestroyed storage deposit = depositsWhenDestroyed[_lender];
+        require(
+            deposit.sentToLender == false && deposit.sentToRenter == false,
+            "Deposit already sent"
+        );
+        require(deposit.date > 0 && deposit.amount > 0, "Deposit not found");
+        require(
+            deposit.lenderContractOwner != address(0) &&
+                deposit.renterContract != address(0) &&
+                deposit.renterContractOwner != address(0),
+            "Deposit not found"
+        );
+        _sentToLender
+            ? deposit.sentToLender = true
+            : deposit.sentToRenter = true;
+        totalDepositsWhenDestroyed -= deposit.amount;
+        _sentToLender
+            ? W2R.safeTransfer(deposit.lenderContractOwner, deposit.amount)
+            : W2R.safeTransfer(deposit.renterContractOwner, deposit.amount);
     }
 
     /**
@@ -159,10 +251,9 @@ contract VaultW2R is Ownable {
     function withdrawW2R(uint256 amount) external onlyOwner {
         require(amount > 0, "Amount must be greater than 0");
         require(
-            W2R.balanceOf(address(this)) >= amount,
+            W2R.balanceOf(address(this)) >= amount + totalDepositsWhenDestroyed,
             "Vault has insufficient W2R balance"
         );
-
         W2R.safeTransfer(msg.sender, amount);
         emit W2RWithdrawn(msg.sender, amount);
     }

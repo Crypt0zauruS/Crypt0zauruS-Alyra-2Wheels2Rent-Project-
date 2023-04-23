@@ -29,7 +29,7 @@ contract Utilities {
      */
 
     modifier isActivated() {
-        require(!isDeactivated, "Contract deactivated");
+        require(!isDeactivated, "deactivated");
         _;
     }
 
@@ -39,10 +39,7 @@ contract Utilities {
      */
 
     modifier checkAllowance(uint amount) {
-        require(
-            W2R.allowance(msg.sender, address(this)) >= amount,
-            "Need approval"
-        );
+        require(W2R.allowance(msg.sender, address(this)) >= amount, "approval");
         _;
     }
 
@@ -87,6 +84,8 @@ contract Utilities {
     );
 
     uint public totalRentals;
+    // safe date to authorize destruction
+    uint public safeDate;
 
     mapping(address => uint) rewards;
     uint totalRewards;
@@ -129,10 +128,10 @@ contract Utilities {
         string calldata _latitude,
         string calldata _longitude
     ) public onlyOwner {
-        require(!isDestroyed, "Destroyed");
+        require(!isDestroyed, "destroyed");
         require(
             bytes(_latitude).length > 0 && bytes(_longitude).length > 0,
-            "GPS empty"
+            "no GPS"
         );
         GPS storage gps = gpsData[address(this)];
         gps.latitude = _latitude;
@@ -160,7 +159,7 @@ contract Utilities {
         require(isDeactivated && !isDestroyed, "Activated or destroyed");
         require(
             bytes(_latitude).length > 0 && bytes(_longitude).length > 0,
-            "GPS cannot be empty"
+            "no GPS"
         );
         setGPS(_latitude, _longitude);
         isDeactivated = false;
@@ -175,7 +174,7 @@ contract Utilities {
     function depositW2R(
         uint _amount
     ) external isActivated checkAllowance(_amount) {
-        require(_amount > 0, "Bad amount");
+        require(_amount > 0, "bad amount");
         require(W2R.balanceOf(msg.sender) >= _amount, "Insufficient W2R");
         W2R.safeTransferFrom(msg.sender, address(this), _amount);
         emit W2Rdeposited(msg.sender, _amount, block.timestamp, address(this));

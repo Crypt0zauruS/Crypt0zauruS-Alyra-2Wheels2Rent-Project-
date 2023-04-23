@@ -192,10 +192,10 @@ contract("Proposal Already made", (accounts) => {
       assert.fail("Expected revert not received");
     } catch (error) {
       const revertFound =
-        error.message.search("revert Proposal already made") >= 0;
+        error.message.search("revert already made") >= 0;
       assert(
         revertFound,
-        `Expected "revert Proposal already made", got ${error} instead`
+        `Expected "revert already made", got ${error} instead`
       );
     }
   });

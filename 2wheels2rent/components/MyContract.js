@@ -319,8 +319,10 @@ const MyContract = ({
             <>
               <span>
                 W2R sur votre contrat (10 W2R = 1 MATIC):{" "}
-                <span style={{ color: "red" }}>{w2rBalance}</span>, dont
-                récompenses: <span style={{ color: "red" }}>{rewards}</span>
+                <span style={{ color: "red" }}>{w2rBalance}</span>
+                <br />
+                Récompense totale depuis votre inscription:{" "}
+                <span style={{ color: "red" }}>{rewards}</span>
               </span>
               <br />
               Vous avez autorisé ce contrat à y déposer jusqu&apos;à{" "}
@@ -489,6 +491,9 @@ const MyContract = ({
             votre contrat et votre NFT seront détruits.
             <br /> Les W2R détenus par ce contrat seront transférés à votre
             wallet.
+            <br />
+            Si une location est en cours, vous ne pourrez pas vous désinscrire
+            avant la date de fin de celle-ci + 2 jours, par mesure de sécurité.
           </p>
         </>
       )}
