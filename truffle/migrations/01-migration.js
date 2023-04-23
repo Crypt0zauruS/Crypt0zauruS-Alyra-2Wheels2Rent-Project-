@@ -145,8 +145,11 @@ module.exports = async (deployer, network, accounts) => {
     console.log(
       "RenterWhitelist address set in TwoWheels2RentRenter NFT contract"
     );
+
     await TwoWheels2RentRenterInstance.setIpfsHash(renterIPFS);
     console.log("IPFS hash set in TwoWheels2RentRenter NFT contract");
+
+    if (network === "mumbai") await sleep(5000);
     // set whitelist contracts addresses in VaultW2R as approvers
     await VaultW2RInstance.setWhitelistLenders(LenderWhitelistInstance.address);
     console.log("LenderWhitelist address set in VaultW2R contract");

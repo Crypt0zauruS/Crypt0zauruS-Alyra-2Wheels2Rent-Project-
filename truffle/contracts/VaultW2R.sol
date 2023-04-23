@@ -235,7 +235,7 @@ contract VaultW2R is Ownable {
         );
         require(amount > 0, "Amount must be greater than 0");
         require(
-            W2R.balanceOf(address(this)) >= amount,
+            W2R.balanceOf(address(this)) >= amount + totalDepositsWhenDestroyed,
             "Vault has insufficient W2R balance"
         );
 

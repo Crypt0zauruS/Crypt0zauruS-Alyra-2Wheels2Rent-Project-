@@ -99,16 +99,16 @@
     "absolutePath": "project:/contracts/LenderWhitelist.sol",
     "exportedSymbols": {
       "Address": [
-        11902
+        11904
       ],
       "BikeShare": [
         4035
       ],
       "Context": [
-        11924
+        11926
       ],
       "ERC20": [
-        9895
+        9897
       ],
       "I1TwoWheels2RentLender": [
         4091
@@ -120,19 +120,19 @@
         2198
       ],
       "IERC165": [
-        12209
+        12211
       ],
       "IERC20": [
-        9973
+        9975
       ],
       "IERC20Metadata": [
-        10042
+        10044
       ],
       "IERC20Permit": [
-        10078
+        10080
       ],
       "IERC721": [
-        11402
+        11404
       ],
       "IVaultW2R": [
         4056
@@ -144,10 +144,10 @@
         4722
       ],
       "Ownable": [
-        9197
+        9199
       ],
       "SafeERC20": [
-        10359
+        10361
       ],
       "Utilities": [
         8388
@@ -175,7 +175,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 4723,
-        "sourceUnit": 9896,
+        "sourceUnit": 9898,
         "src": "177:71:3",
         "symbolAliases": [],
         "unitAlias": ""
@@ -187,7 +187,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 4723,
-        "sourceUnit": 9198,
+        "sourceUnit": 9200,
         "src": "249:68:3",
         "symbolAliases": [],
         "unitAlias": ""
@@ -840,7 +840,7 @@
                 "1745:7:3"
               ],
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 9197,
+              "referencedDeclaration": 9199,
               "src": "1745:7:3"
             },
             "id": 4094,
@@ -863,8 +863,8 @@
         "id": 4722,
         "linearizedBaseContracts": [
           4722,
-          9197,
-          11924
+          9199,
+          11926
         ],
         "name": "LenderWhitelist",
         "nameLocation": "1726:15:3",
@@ -967,7 +967,7 @@
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_ERC20_$9895",
+              "typeIdentifier": "t_contract$_ERC20_$9897",
               "typeString": "contract ERC20"
             },
             "typeName": {
@@ -980,13 +980,13 @@
                   "2040:5:3"
                 ],
                 "nodeType": "IdentifierPath",
-                "referencedDeclaration": 9895,
+                "referencedDeclaration": 9897,
                 "src": "2040:5:3"
               },
-              "referencedDeclaration": 9895,
+              "referencedDeclaration": 9897,
               "src": "2040:5:3",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ERC20_$9895",
+                "typeIdentifier": "t_contract$_ERC20_$9897",
                 "typeString": "contract ERC20"
               }
             },
@@ -2245,7 +2245,7 @@
                       "referencedDeclaration": 4103,
                       "src": "3809:3:3",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_ERC20_$9895",
+                        "typeIdentifier": "t_contract$_ERC20_$9897",
                         "typeString": "contract ERC20"
                       }
                     },
@@ -2277,10 +2277,10 @@
                         "name": "ERC20",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 9895,
+                        "referencedDeclaration": 9897,
                         "src": "3815:5:3",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_type$_t_contract$_ERC20_$9895_$",
+                          "typeIdentifier": "t_type$_t_contract$_ERC20_$9897_$",
                           "typeString": "type(contract ERC20)"
                         }
                       },
@@ -2296,13 +2296,13 @@
                       "src": "3815:11:3",
                       "tryCall": false,
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_ERC20_$9895",
+                        "typeIdentifier": "t_contract$_ERC20_$9897",
                         "typeString": "contract ERC20"
                       }
                     },
                     "src": "3809:17:3",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_ERC20_$9895",
+                      "typeIdentifier": "t_contract$_ERC20_$9897",
                       "typeString": "contract ERC20"
                     }
                   },
@@ -2716,7 +2716,7 @@
                     "4167:9:3"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9116,
+                  "referencedDeclaration": 9118,
                   "src": "4167:9:3"
                 },
                 "nodeType": "ModifierInvocation",
@@ -6592,7 +6592,7 @@
                               "referencedDeclaration": 4103,
                               "src": "7291:3:3",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_contract$_ERC20_$9895",
+                                "typeIdentifier": "t_contract$_ERC20_$9897",
                                 "typeString": "contract ERC20"
                               }
                             }
@@ -6600,7 +6600,7 @@
                           "expression": {
                             "argumentTypes": [
                               {
-                                "typeIdentifier": "t_contract$_ERC20_$9895",
+                                "typeIdentifier": "t_contract$_ERC20_$9897",
                                 "typeString": "contract ERC20"
                               }
                             ],
@@ -8198,7 +8198,7 @@
                     "8631:9:3"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9116,
+                  "referencedDeclaration": 9118,
                   "src": "8631:9:3"
                 },
                 "nodeType": "ModifierInvocation",
@@ -8497,7 +8497,7 @@
                     "9331:9:3"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9116,
+                  "referencedDeclaration": 9118,
                   "src": "9331:9:3"
                 },
                 "nodeType": "ModifierInvocation",
@@ -9342,7 +9342,7 @@
           },
           {
             "baseFunctions": [
-              9153
+              9155
             ],
             "body": {
               "id": 4720,
@@ -9433,7 +9433,7 @@
                     "10681:9:3"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9116,
+                  "referencedDeclaration": 9118,
                   "src": "10681:9:3"
                 },
                 "nodeType": "ModifierInvocation",
@@ -9481,7 +9481,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.12",
-  "updatedAt": "2023-04-23T15:36:48.603Z",
+  "updatedAt": "2023-04-23T17:05:00.937Z",
   "devdoc": {
     "details": "This interface is used to interact with the TwoWheels2RentLender contract.",
     "kind": "dev",

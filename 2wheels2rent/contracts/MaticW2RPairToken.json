@@ -8559,25 +8559,25 @@
     "absolutePath": "project:/contracts/MaticW2RPairToken.sol",
     "exportedSymbols": {
       "Context": [
-        11924
+        11926
       ],
       "ERC20": [
-        9895
+        9897
       ],
       "ERC20Burnable": [
-        10017
+        10019
       ],
       "IERC20": [
-        9973
+        9975
       ],
       "IERC20Metadata": [
-        10042
+        10044
       ],
       "MaticW2RPairToken": [
         4925
       ],
       "Ownable": [
-        9197
+        9199
       ]
     },
     "id": 4926,
@@ -8602,7 +8602,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 4926,
-        "sourceUnit": 9896,
+        "sourceUnit": 9898,
         "src": "254:71:4",
         "symbolAliases": [],
         "unitAlias": ""
@@ -8614,7 +8614,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 4926,
-        "sourceUnit": 10018,
+        "sourceUnit": 10020,
         "src": "326:90:4",
         "symbolAliases": [],
         "unitAlias": ""
@@ -8626,7 +8626,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 4926,
-        "sourceUnit": 9198,
+        "sourceUnit": 9200,
         "src": "417:68:4",
         "symbolAliases": [],
         "unitAlias": ""
@@ -8642,7 +8642,7 @@
                 "747:5:4"
               ],
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 9895,
+              "referencedDeclaration": 9897,
               "src": "747:5:4"
             },
             "id": 4730,
@@ -8657,7 +8657,7 @@
                 "754:13:4"
               ],
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 10017,
+              "referencedDeclaration": 10019,
               "src": "754:13:4"
             },
             "id": 4732,
@@ -8672,7 +8672,7 @@
                 "769:7:4"
               ],
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 9197,
+              "referencedDeclaration": 9199,
               "src": "769:7:4"
             },
             "id": 4734,
@@ -8693,12 +8693,12 @@
         "id": 4925,
         "linearizedBaseContracts": [
           4925,
-          9197,
-          10017,
-          9895,
-          10042,
-          9973,
-          11924
+          9199,
+          10019,
+          9897,
+          10044,
+          9975,
+          11926
         ],
         "name": "MaticW2RPairToken",
         "nameLocation": "726:17:4",
@@ -8853,7 +8853,7 @@
                     "888:5:4"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9895,
+                  "referencedDeclaration": 9897,
                   "src": "888:5:4"
                 },
                 "nodeType": "ModifierInvocation",
@@ -9003,7 +9003,7 @@
                     "1357:9:4"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9116,
+                  "referencedDeclaration": 9118,
                   "src": "1357:9:4"
                 },
                 "nodeType": "ModifierInvocation",
@@ -9462,7 +9462,7 @@
                     "1651:9:4"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9116,
+                  "referencedDeclaration": 9118,
                   "src": "1651:9:4"
                 },
                 "nodeType": "ModifierInvocation",
@@ -9878,7 +9878,7 @@
                     "2089:9:4"
                   ],
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 9116,
+                  "referencedDeclaration": 9118,
                   "src": "2089:9:4"
                 },
                 "nodeType": "ModifierInvocation",
@@ -10101,7 +10101,7 @@
                       "name": "_mint",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 9712,
+                      "referencedDeclaration": 9714,
                       "src": "2641:5:4",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$_t_uint256_$returns$__$",
@@ -10220,7 +10220,7 @@
           },
           {
             "baseFunctions": [
-              9995
+              9997
             ],
             "body": {
               "id": 4877,
@@ -10387,7 +10387,7 @@
                       "memberLocation": "2954:4:4",
                       "memberName": "burn",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 9995,
+                      "referencedDeclaration": 9997,
                       "src": "2948:10:4",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_uint256_$returns$__$",
@@ -10484,7 +10484,7 @@
           },
           {
             "baseFunctions": [
-              9883
+              9885
             ],
             "body": {
               "id": 4923,
@@ -10923,7 +10923,7 @@
                       "memberLocation": "3664:20:4",
                       "memberName": "_beforeTokenTransfer",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 9883,
+                      "referencedDeclaration": 9885,
                       "src": "3658:26:4",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$_t_address_$_t_uint256_$returns$__$",
@@ -11089,8 +11089,8 @@
     "1337": {
       "events": {},
       "links": {},
-      "address": "0xf550ea80771E7Ed8df27338be59204ec01222919",
-      "transactionHash": "0x90633fd3d7c386532355743d10ac28b049170c3b9d7e695163a4948fb1f5cb4d"
+      "address": "0xcCbC1bC393911cdA0cf9Ade05fFeC934De8D0E8F",
+      "transactionHash": "0xf9c6f3c11371ad95b18767b02aae3451101a87fd50d60a87fcb3005a8382eb20"
     },
     "80001": {
       "events": {
@@ -11165,12 +11165,12 @@
         }
       },
       "links": {},
-      "address": "0x8bc13380788121Dd1928662Ce262F7dfC96667D9",
-      "transactionHash": "0xc50dd72a4319018cd0f7f3de186e99fb600b2e6ae7902787edb4e973c098d4db"
+      "address": "0x84D19ee85fCdb32c91d1b8F5269D4E1aAa455212",
+      "transactionHash": "0x9ce62a186936d27448397d1f5848dee9b9915033c33f3524a669eca087969eb3"
     }
   },
   "schemaVersion": "3.4.12",
-  "updatedAt": "2023-04-23T15:40:56.400Z",
+  "updatedAt": "2023-04-23T17:19:46.622Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "This contract represents an ERC20 token which is burnable and has restricted minting and burning functionality. It uses the OpenZeppelin ERC20, ERC20Burnable, and Ownable contracts.",
