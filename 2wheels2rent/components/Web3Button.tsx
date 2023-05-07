@@ -41,6 +41,7 @@ const ConnectButton = ({ connect }: ConnectProps) => {
   return connect ? (
     <>
       <button
+        type="button"
         onClick={connect}
         className="animate__animated animate__flip btn btn-info gradient-button"
       >
@@ -69,6 +70,7 @@ const ConnectButton = ({ connect }: ConnectProps) => {
       </button>
       {isClient && window.ethereum && (
         <button
+          type="button"
           //onClick={addPolygonToMetamask}
           onClick={checkIfMetamaskConnected}
           className="polygon animate__animated animate__zoomIn btn btn-info gradient-button"
@@ -107,6 +109,7 @@ interface DisconnectProps {
 const DisconnectButton = ({ disconnect }: DisconnectProps) => {
   return disconnect ? (
     <button
+      type="button"
       onClick={disconnect}
       className="animate__animated animate__flip"
       style={{

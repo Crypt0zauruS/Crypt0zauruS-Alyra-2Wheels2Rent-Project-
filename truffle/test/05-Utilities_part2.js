@@ -177,10 +177,7 @@ contract("Utilities", (accounts) => {
       const latitude = "42.3601";
       const longitude = "-71.0589";
       await utilities.activate(latitude, longitude, { from: owner });
-      await expectRevert(
-        utilities.depositW2R(0, { from: owner }),
-        "bad amount"
-      );
+      await expectRevert(utilities.depositW2R(0, { from: owner }), "bad");
     });
 
     it("should revert if W2R deposit is attempted without approval", async () => {
@@ -222,7 +219,7 @@ contract("Utilities", (accounts) => {
       await W2RInstance.approve(utilities.address, amount, { from: owner });
       await expectRevert(
         utilities.depositW2R(amount, { from: owner }),
-        "Insufficient W2R"
+        "Insufficient"
       );
     });
 

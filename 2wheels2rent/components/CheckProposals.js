@@ -355,6 +355,7 @@ const CheckProposals = ({
                       )}
                     </p>
                     <button
+                    type="button"
                       className="btn btn-warning fs-5 m-2"
                       disabled={loading}
                       onClick={() =>
@@ -371,6 +372,7 @@ const CheckProposals = ({
                       Accepter
                     </button>
                     <button
+                    type="button"
                       className="btn btn-danger fs-5 m-2"
                       onClick={() => handleCancelProposal(renter)}
                       disabled={loading}
@@ -385,6 +387,7 @@ const CheckProposals = ({
         </ul>
         {proposals.length > 0 && (
           <button
+          type="button"
             onClick={cleanProposals}
             className="btn btn-warning m-2"
             style={{ margin: "0 auto", display: "block" }}
@@ -396,6 +399,7 @@ const CheckProposals = ({
       </div>
 
       <button
+      type="button"
         onClick={() => setCheckProposals(false)}
         className="btn btn-danger"
         style={{ margin: "0 auto", display: "block" }}

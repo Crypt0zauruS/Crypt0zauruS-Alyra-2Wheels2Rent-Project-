@@ -14,7 +14,25 @@ Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de 
 
 ## Mises à jour
 
+### 1.2.0
+
+#### 2023-05-07
+
+- Amélioration de la robustesse des fonctions d'inscription et de désinscription de la plateforme
+- Ajout de sécurisations dans next.config.js
+- Ajout du SEO
+- Les fees récoltées par le DEX sont à présent envoyées dans le vault
+- Comptabilité améliorée pour le Vault
+- Les utilisateurs doivent à présent réclamer leurs récompenses dans l'interface de leur contrat
+- Ajout du Staking des tokens W2R via le DEX
+- Mise à jour du script de migration
+- Mise à jour des tests unitaires
+- optimisation du code
+- optimisations graphiques dans l'application
+- A faire: nouvelle vidéo de démonstration
+
 ### 1.1.0
+
 #### 2023-04-23
 
 - Ajout de la fonctionnalité d'échange de QR codes pour la prise et le retour des vélos entre loueurs et emprunteurs
@@ -25,9 +43,9 @@ Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de 
 - Affichage des cours du Matic et du W2R dans le header, en USD et en EUR
 - Optimisation du code
 - Mise à jour des tests unitaires
-- A faire: nouvelle vidéo de démonstration
 
 ### 1.0.0
+
 #### 2023-04-10
 
 Initialisation du projet
@@ -328,6 +346,19 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 
 - Retirer les fees
   - devrait permettre au owner de retirer les fees avec succès
+
+### Partie 6 : Staking des W2R
+
+1. Staker des tokens W2R
+2. Ne pas retirer les tokens W2R avant 15 jours
+3. Gagner et réclamer des récompenses
+4. Revert lorsqu'on essaie de retirer plus de tokens que ce qui a été mis en jeu
+5. Revert lorsqu'on essaie de retirer des tokens avant 15 jours
+6. Revert lorsqu'on essaie de mettre en jeu zéro token
+7. Les utilisateurs doivent pouvoir retirer les tokens mis en jeu et les récompenses après la période de verrouillage
+8. Revert lorsqu'on essaie de réclamer des récompenses sans avoir mis de tokens en jeu
+9. Revert lorsqu'on essaie de mettre en jeu des tokens sans approbation
+10. Autoriser uniquement le propriétaire à retirer les frais
 
 ### **Slither**
 

@@ -79,9 +79,11 @@ const MapComponent = ({ setRDV, RDV, showToast }) => {
     if (query.trim() !== "") {
       try {
         const response = await axios.get(
-          "https://nominatim.openstreetmap.org/search",
+          //"https://nominatim.openstreetmap.org/search",
+          "api/nominatim",
           {
             params: {
+              type: "search",
               q: query,
               format: "json",
               limit: 1,
@@ -108,7 +110,7 @@ const MapComponent = ({ setRDV, RDV, showToast }) => {
   return (
     <div style={{ width: "90%" }}>
       {!loader ? (
-        <button className="map-button" onClick={locateMe} disabled={loader}>
+        <button className="map-button" onClick={locateMe} disabled={loader} type="button">
           Me localiser
         </button>
       ) : (

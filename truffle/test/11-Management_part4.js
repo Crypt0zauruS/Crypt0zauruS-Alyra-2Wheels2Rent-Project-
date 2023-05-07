@@ -152,10 +152,7 @@ contract("BikeShare", (accounts) => {
     });
 
     it("should not allow non-whitelistLender to destroy the contract", async () => {
-      await expectRevert(
-        bikeShare.destroy({ from: accounts[2] }),
-        "Only whitelist"
-      );
+      await expectRevert(bikeShare.destroy({ from: accounts[2] }), "wl");
     });
 
     it("should transfer funds to the owner", async () => {
@@ -306,10 +303,7 @@ contract("BikeRent", (accounts) => {
     });
 
     it("should not allow non-whitelistRenter to destroy the contract", async () => {
-      await expectRevert(
-        bikeRent.destroy({ from: accounts[2] }),
-        "Only whitelist"
-      );
+      await expectRevert(bikeRent.destroy({ from: accounts[2] }), "wl");
     });
 
     it("should transfer funds to the owner", async () => {

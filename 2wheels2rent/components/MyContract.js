@@ -32,6 +32,23 @@ const MyContract = ({
   const [amount, setAmount] = useState(0);
   const [allowance, setAllowance] = useState(0);
   const [rewards, setRewards] = useState(0);
+  const [action, setAction] = useState("deposit");
+
+  const hasTooManyDecimals = (amount) => {
+    if (typeof amount !== "string") {
+      amount = amount.toString();
+    }
+    const formattedAmount = amount.replace(",", ".");
+    if (
+      Number(formattedAmount) &&
+      formattedAmount.split(".")[1] &&
+      formattedAmount.split(".")[1].length > 18
+    ) {
+      showToast("Montant invalide", true);
+      return true;
+    }
+    return false;
+  };
 
   const checkValues = useCallback(async () => {
     try {
@@ -40,7 +57,6 @@ const MyContract = ({
         const reward = await contract.getTotalRewards();
         setRewards(Number(ethers.utils.formatEther(reward)));
         const gps = await contract.gpsData(contract.address);
-        console.log(gps);
       }
       if (role === "loueur") {
         setMaxDuration((await contract.maximumRental()) / 86400);
@@ -66,7 +82,7 @@ const MyContract = ({
   const getContractW2Rbalance = useCallback(async () => {
     try {
       const balance = await w2Rcontract.balanceOf(contractAddress);
-      setW2rBalance(ethers.utils.formatEther(balance));
+      setW2rBalance(Number(ethers.utils.formatEther(balance)));
     } catch (err) {
       console.log(err);
     }
@@ -170,12 +186,15 @@ const MyContract = ({
       showToast("Veuillez entrer un montant", true);
       return;
     }
-    if (Number(amount) > Number(allowance)) {
+    if (Number(amount) > allowance) {
       showToast("Vous n'avez pas assez autorisé de W2R ", true);
       return;
     }
-    if (Number(amount) > Number(w2rUserBalance)) {
+    if (Number(amount) > w2rUserBalance) {
       showToast("Vous n'avez pas assez de W2R ", true);
+      return;
+    }
+    if (hasTooManyDecimals(amount)) {
       return;
     }
     setLoaderContract(true);
@@ -192,26 +211,23 @@ const MyContract = ({
       });
       getW2Rbalance();
       getContractW2Rbalance();
-      setLoaderContract(false);
     } catch (err) {
       console.log(err);
-      setLoaderContract(false);
       showToast("Erreur lors du dépôt de W2R", true);
+    } finally {
+      await getAllowance();
+      setAmount(0);
     }
   };
 
   const getAllowance = useCallback(async () => {
     if (!validateConditions()) return;
-
     setLoaderContract(true);
     try {
       const allowance = await w2Rcontract.allowance(address, contractAddress);
       const decimals = await w2Rcontract.decimals();
       const allowanceInW2R = ethers.utils.formatUnits(allowance, decimals);
-
-      if (allowanceInW2R > 0) {
-        setAllowance(Number(allowanceInW2R));
-      }
+      setAllowance(Number(allowanceInW2R));
     } catch (err) {
       console.log(err);
     } finally {
@@ -227,8 +243,11 @@ const MyContract = ({
       showToast("Veuillez entrer un montant", true);
       return;
     }
-    if (Number(amount) > Number(w2rBalance)) {
+    if (Number(amount) > w2rBalance) {
       showToast("Vous n'avez pas assez de W2R dans le contrat", true);
+      return;
+    }
+    if (hasTooManyDecimals(amount)) {
       return;
     }
     setLoaderContract(true);
@@ -244,6 +263,7 @@ const MyContract = ({
       console.log(err);
       showToast("Erreur lors du retrait de W2R", true);
     } finally {
+      setAmount(0);
       setLoaderContract(false);
     }
   };
@@ -251,6 +271,9 @@ const MyContract = ({
   const handleEnableW2R = async (e) => {
     e.preventDefault();
     setLoaderContract(true);
+    if (hasTooManyDecimals(amount)) {
+      return;
+    }
     try {
       const decimals = await w2Rcontract.decimals();
       const amountWei = ethers.utils.parseUnits(amount, decimals);
@@ -269,6 +292,34 @@ const MyContract = ({
       console.log(err);
     } finally {
       setLoaderContract(false);
+    }
+  };
+
+  const handleClaimRewards = async (e) => {
+    e.preventDefault();
+    if (!validateConditions()) return;
+    if (rewards === 0) {
+      showToast("Vous n'avez pas de récompenses à réclamer", true);
+      return;
+    }
+    setLoaderContract(true);
+    try {
+      const decimals = await w2Rcontract.decimals();
+      const tx = await contract.claimRewards();
+      await tx.wait();
+      contract.once("RewardClaimed", (owner, date, amount, contract) => {
+        console.log("RewardClaimed", owner, date, amount, contract);
+        showToast(
+          Number(ethers.utils.formatUnits(amount, decimals)) + " W2R réclamés !"
+        );
+      });
+      getW2Rbalance();
+      getContractW2Rbalance();
+    } catch (err) {
+      console.log(err);
+      showToast("Erreur lors de la réclamation des récompenses", true);
+    } finally {
+      checkValues();
     }
   };
 
@@ -297,6 +348,7 @@ const MyContract = ({
     <div className="modalContract">
       <div className="bike-rental-form">
         <button
+          type="button"
           className="closeButton btn btn-success"
           onClick={() => setModalContract(false)}
         >
@@ -317,76 +369,168 @@ const MyContract = ({
           <br />
           {activated && (
             <>
-              <span>
-                W2R sur votre contrat (10 W2R = 1 MATIC):{" "}
-                <span style={{ color: "red" }}>{w2rBalance}</span>
-                <br />
-                Récompense totale depuis votre inscription:{" "}
-                <span style={{ color: "red" }}>{rewards}</span>
-              </span>
+              <span>W2R sur votre contrat (10 W2R = 1 MATIC): </span>
+              <span style={{ color: "red" }}>{w2rBalance.toFixed(2)}</span>
               <br />
               Vous avez autorisé ce contrat à y déposer jusqu&apos;à{" "}
-              <span style={{ color: "red" }}>{allowance} de vos W2R</span>
+              <span style={{ color: "red" }}>
+                {allowance.toFixed(2)} de vos W2R
+              </span>
+              <div className="input-group m-4">
+                Récompenses accumulées:
+                <span
+                  style={{
+                    color: "red",
+                    marginLeft: "5px",
+                    marginRight: "5px",
+                  }}
+                >
+                  {rewards.toFixed(2)}
+                </span>
+                W2R
+                <button
+                  type="button"
+                  disabled={rewards === 0 || loaderContract}
+                  onClick={handleClaimRewards}
+                  className="btn btn-info"
+                  style={{
+                    marginLeft: "5px",
+                    marginTop: "-5px",
+                    borderRadius: "5px",
+                  }}
+                >
+                  Réclamer
+                </button>
+              </div>
             </>
           )}
         </p>
         {activated && (
           <>
             <hr />
+
             <label htmlFor="w2r-amount" className="fs-5">
-              W2R à déposer ou retirer:
+              <span
+                style={{
+                  color: `${action === "deposit" ? "orangered" : "black"}`,
+                  cursor: `${action === "deposit" ? "none" : "pointer"}`,
+                }}
+                onClick={() => {
+                  setAmount(0);
+                  setAction("deposit");
+                }}
+              >
+                Déposer
+              </span>{" "}
+              /{" "}
+              <span
+                style={{
+                  color: `${action === "withdraw" ? "orangered" : "black"}`,
+                  cursor: `${action === "withdraw" ? "none" : "pointer"}`,
+                }}
+                onClick={() => {
+                  setAmount(0);
+                  setAction("withdraw");
+                }}
+              >
+                Retirer
+              </span>{" "}
+              W2R:
             </label>
-            <input
-              type="number"
-              id="w2r-amount"
-              min="1"
-              value={amount}
-              required
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) =>
-                (e.key === "." || e.key === ",") && e.preventDefault()
-              }
-            />
+
+            <div className="input-group">
+              <input
+                type="number"
+                id="w2r-amount"
+                min="1"
+                value={amount}
+                required
+                style={{ marginLeft: "10px", width: "200px" }}
+                onChange={(e) => setAmount(e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    !(
+                      /[0-9]/.test(e.key) ||
+                      e.key === "Backspace" ||
+                      e.key === "ArrowLeft" ||
+                      e.key === "ArrowRight" ||
+                      e.key === "Tab"
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => e.preventDefault()}
+              />
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={
+                  action === "deposit"
+                    ? () => setAmount(w2rUserBalance)
+                    : action === "withdraw"
+                    ? () => setAmount(w2rBalance)
+                    : null
+                }
+                style={{
+                  marginTop: "1px",
+                  height: "40px",
+                  color: "orangered",
+                  zIndex: "0",
+                }}
+              >
+                Max
+              </button>
+            </div>
             <div className="image-container">
               <Image width={200} height={200} src={W2R} alt="W2R token" />
             </div>
-            <button
-              type="button"
-              className="btn btn-warning contractButton"
-              onClick={handleWithdrawW2R}
-              disabled={loaderContract}
-            >
-              Retirer des W2R vers mon wallet
-            </button>
-            {Number(amount) > allowance ? (
-              <div>
+            {action === "withdraw" && (
+              <div style={{ marginTop: "1.7rem" }}>
+                <br />
                 <button
                   type="button"
-                  className="btn btn-info"
-                  onClick={handleEnableW2R}
-                  style={{ marginBottom: "0.5rem" }}
+                  className="btn btn-warning contractButton"
+                  onClick={handleWithdrawW2R}
                   disabled={loaderContract}
                 >
-                  Autoriser W2R pour déposer
+                  Retirer des W2R vers mon wallet
                 </button>
-                <p className="text-center fs-6">
-                  Pour un dépôt de W2R dans ce contrat, vous devez
-                  l&apos;autoriser à prendre {Number(amount)} W2R{" "}
-                  {allowance > 0 && "de plus"} dans votre wallet.
-                </p>
               </div>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleDepositW2R}
-                disabled={loaderContract}
-              >
-                Déposer les W2R dans ce contrat
-              </button>
+            )}
+            {action === "deposit" && (
+              <>
+                {Number(amount) > allowance ? (
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-info"
+                      onClick={handleEnableW2R}
+                      style={{ marginBottom: "0.5rem" }}
+                      disabled={loaderContract}
+                    >
+                      Autoriser W2R pour déposer
+                    </button>
+                    <p className="text-center fs-6">
+                      Pour un dépôt de W2R dans ce contrat, vous devez
+                      l&apos;autoriser à prendre {Number(amount)} W2R dans votre
+                      wallet.
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleDepositW2R}
+                    disabled={loaderContract}
+                  >
+                    Déposer les W2R dans ce contrat
+                  </button>
+                )}
+              </>
             )}
             <br />
-            <p style={{ color: "green" }}>
+            <p style={{ color: "green", wordBreak: "break-all" }}>
               Contrat du W2R: {w2rAddress}{" "}
               <span onClick={handleCopy} style={{ cursor: "pointer" }}>
                 💾
@@ -413,9 +557,20 @@ const MyContract = ({
                 value={maxDuration}
                 required
                 onChange={(e) => setMaxDuration(e.target.value)}
-                onKeyDown={(e) =>
-                  (e.key === "." || e.key === ",") && e.preventDefault()
-                }
+                onKeyDown={(e) => {
+                  if (
+                    !(
+                      /[0-9]/.test(e.key) ||
+                      e.key === "Backspace" ||
+                      e.key === "ArrowLeft" ||
+                      e.key === "ArrowRight" ||
+                      e.key === "Tab"
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => e.preventDefault()}
               />
               <label htmlFor="deposit" className="fs-5">
                 Montant du dépôt de garantie (en W2R):
@@ -427,9 +582,20 @@ const MyContract = ({
                 value={deposit}
                 required
                 onChange={(e) => setDeposit(e.target.value)}
-                onKeyDown={(e) =>
-                  (e.key === "." || e.key === ",") && e.preventDefault()
-                }
+                onKeyDown={(e) => {
+                  if (
+                    !(
+                      /[0-9]/.test(e.key) ||
+                      e.key === "Backspace" ||
+                      e.key === "ArrowLeft" ||
+                      e.key === "ArrowRight" ||
+                      e.key === "Tab"
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => e.preventDefault()}
               />
 
               <label htmlFor="w2rRate" className="fs-5">
@@ -442,9 +608,20 @@ const MyContract = ({
                 value={w2rRate}
                 required
                 onChange={(e) => setW2rRate(e.target.value)}
-                onKeyDown={(e) =>
-                  (e.key === "." || e.key === ",") && e.preventDefault()
-                }
+                onKeyDown={(e) => {
+                  if (
+                    !(
+                      /[0-9]/.test(e.key) ||
+                      e.key === "Backspace" ||
+                      e.key === "ArrowLeft" ||
+                      e.key === "ArrowRight" ||
+                      e.key === "Tab"
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => e.preventDefault()}
               />
               <button
                 type="submit"

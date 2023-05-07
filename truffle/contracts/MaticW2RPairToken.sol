@@ -11,6 +11,7 @@ import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title MaticW2RPairToken
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @dev This contract represents an ERC20 token which is burnable and has restricted minting and burning functionality.
  * It uses the OpenZeppelin ERC20, ERC20Burnable, and Ownable contracts.
  */

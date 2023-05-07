@@ -59,6 +59,7 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
     <div className="modalNFT">
       <div className="modalNFTContent">
         <button
+          type="button"
           className="closeButton btn btn-success"
           onClick={() => setModalNFT(false)}
         >

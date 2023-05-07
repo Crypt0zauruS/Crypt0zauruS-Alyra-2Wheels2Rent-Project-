@@ -4,23 +4,34 @@ pragma solidity ^0.8.0;
 //import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 //import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 //import "@openzeppelin/contracts/access/Ownable.sol";
+//import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "../node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title VaultW2R
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @notice This contract serves as a vault for managing the distribution and withdrawal of W2R tokens.
  * @dev The contract uses OpenZeppelin's SafeERC20, Ownable, and IERC20 contracts.
  */
 
-contract VaultW2R is Ownable {
+contract VaultW2R is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     IERC20 public W2R;
     address public whitelistLenders;
     address public whitelistRenters;
 
     mapping(address => bool) private approvedContracts;
+    // incomes
+    mapping(address => mapping(uint => uint)) private w2rIncomes;
+    mapping(address => mapping(uint => uint)) private maticIncomes;
+    // withdrawals
+    mapping(address => mapping(uint => uint)) private w2rWithdraws;
+    mapping(address => mapping(uint => uint)) private maticWithdraws;
+    // distributions
+    mapping(address => mapping(uint => uint)) private w2rDistributions;
 
     // in case a bikeShare contract is destroyed although rental dispute is still ongoing, deposit is placed here, waiting for the dispute to be resolved
     mapping(address => DepositsWhenDestroyed) private depositsWhenDestroyed;
@@ -37,10 +48,30 @@ contract VaultW2R is Ownable {
 
     uint public totalDepositsWhenDestroyed;
 
-    event W2RTransferred(address indexed receiver, uint256 amount);
-    event W2RWithdrawn(address indexed receiver, uint256 amount);
+    event W2RTransferred(
+        address indexed receiver,
+        uint256 amount,
+        uint date,
+        address indexed from
+    );
+    event W2RWithdrawn(address indexed receiver, uint256 amount, uint date);
+    event MaticWithdrawn(address indexed receiver, uint256 amount, uint date);
+    event W2RIncome(address indexed sender, uint256 amount, uint date);
+    event MaticIncome(address indexed sender, uint256 amount, uint date);
     event ContractApproved(address indexed contractAddress, bool status);
     event ContractRemoved(address indexed contractAddress);
+
+    /**
+     * @dev Modifier to check the W2R token amount ans allowance for the calling user.
+     * @param amount Amount of LP tokens to check.
+     */
+    modifier checkAllowance(uint amount) {
+        require(
+            W2R.allowance(msg.sender, address(this)) >= amount,
+            "Need approval for this amount"
+        );
+        _;
+    }
 
     /**
      * @notice Constructs the VaultW2R contract.
@@ -238,9 +269,9 @@ contract VaultW2R is Ownable {
             W2R.balanceOf(address(this)) >= amount + totalDepositsWhenDestroyed,
             "Vault has insufficient W2R balance"
         );
-
+        w2rDistributions[receiver][block.timestamp] = amount;
         W2R.safeTransfer(receiver, amount);
-        emit W2RTransferred(receiver, amount);
+        emit W2RTransferred(receiver, amount, block.timestamp, msg.sender);
     }
 
     /**
@@ -248,13 +279,82 @@ contract VaultW2R is Ownable {
      * @param amount The amount of W2R tokens to be withdrawn.
      */
 
-    function withdrawW2R(uint256 amount) external onlyOwner {
+    function withdrawW2R(uint amount) external onlyOwner {
         require(amount > 0, "Amount must be greater than 0");
         require(
             W2R.balanceOf(address(this)) >= amount + totalDepositsWhenDestroyed,
             "Vault has insufficient W2R balance"
         );
+        w2rWithdraws[msg.sender][block.timestamp] = amount;
         W2R.safeTransfer(msg.sender, amount);
-        emit W2RWithdrawn(msg.sender, amount);
+        emit W2RWithdrawn(msg.sender, amount, block.timestamp);
+    }
+
+    /**
+     * @notice Withdraws Matic tokens from the contract to the owner's address.
+     * @param amount The amount of Matic tokens to be withdrawn.
+     */
+
+    function withdrawMatic(uint amount) external onlyOwner nonReentrant {
+        require(amount > 0, "Amount must be greater than 0");
+        require(
+            address(this).balance >= amount,
+            "Vault has insufficient Matic balance"
+        );
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Failed to withdraw fees");
+        maticWithdraws[msg.sender][block.timestamp] = amount;
+        emit MaticWithdrawn(msg.sender, amount, block.timestamp);
+    }
+
+    /**
+     * @notice Updates the Matic and W2R incomes for the given date.
+     * @dev Only the contract owner or approved contracts can call this function.
+     * @param _maticIncome The amount of Matic income to be updated.
+     * @param _w2rIncome The amount of W2R income to be updated.
+     * @param _date The date for which the incomes should be updated, represented as a Unix timestamp.
+     */
+
+    function updateIncomes(
+        uint _maticIncome,
+        uint _w2rIncome,
+        uint _date
+    ) public {
+        require(
+            approvedContracts[msg.sender] || msg.sender == owner(),
+            "Caller is not approved"
+        );
+        require(_maticIncome > 0 || _w2rIncome > 0, "Nothing to update");
+        if (_maticIncome > 0) {
+            maticIncomes[msg.sender][_date] = _maticIncome;
+            emit MaticIncome(msg.sender, _maticIncome, _date);
+        }
+        if (_w2rIncome > 0) {
+            w2rIncomes[msg.sender][_date] = _w2rIncome;
+            emit W2RIncome(msg.sender, _w2rIncome, _date);
+        }
+    }
+
+    /**
+     * @notice Deposits W2R tokens to the contract.
+     * @dev Only the contract owner can call this function, and the owner's W2R token allowance must be sufficient.
+     * @param _amount The amount of W2R tokens to deposit.
+     */
+
+    function depositW2R(
+        uint _amount
+    ) external onlyOwner checkAllowance(_amount) {
+        require(_amount > 0, "Amount must be greater than zero");
+        updateIncomes(0, _amount, block.timestamp);
+        W2R.safeTransferFrom(msg.sender, address(this), _amount);
+    }
+
+    /**
+     * @dev Fallback function to receive Matic payments.
+     * @notice This function is called when the contract receives Matic tokens and updates the income.
+     */
+
+    receive() external payable {
+        updateIncomes(msg.value, 0, block.timestamp);
     }
 }

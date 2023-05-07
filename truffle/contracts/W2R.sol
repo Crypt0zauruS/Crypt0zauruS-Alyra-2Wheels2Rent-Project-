@@ -12,6 +12,7 @@ import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title 2 Wheels 2 Rent Token (W2R)
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @dev An ERC20 token contract with burnable, pausable, and ownable features.
  * Inherits from the OpenZeppelin ERC20, ERC20Burnable, Pausable, and Ownable contracts.
  */

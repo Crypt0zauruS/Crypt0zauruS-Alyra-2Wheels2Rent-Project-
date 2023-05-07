@@ -217,6 +217,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
 
   const qrCodeButton = () => (
     <button
+      type="button"
       className="btn btn-warning"
       style={{
         margin: "0 auto",
@@ -362,6 +363,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                               ? "suggérée car l'heure du RDV est dépassée"
                               : "possible"}
                             <button
+                              type="button"
                               className="btn btn-warning m-2"
                               onClick={handleCancelRental}
                               disabled={loading || showCamera}
@@ -370,7 +372,12 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                             </button>
                             <hr />
                             <p className="text-center">
-                              Assurez-vous d&apos;avoir convenu avec votre
+                              <span style={{ color: "orangered" }}>
+                                Une fois que vous vous trouvez devant votre
+                                locataire:
+                              </span>{" "}
+                              <br />
+                              assurez-vous d&apos;avoir convenu avec votre
                               locataire de la date et l&apos;heure de retour
                               vers le{" "}
                               <span style={{ color: "red" }}>
@@ -388,6 +395,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                         {qrCodeButton()}
                         <hr />
                         <button
+                          type="button"
                           className="btn btn-success"
                           onClick={handleConfirmBikeTaken}
                           style={{
@@ -410,6 +418,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
                           {qrCodeButton()}
                           <hr />
                           <button
+                            type="button"
                             className="btn btn-danger"
                             onClick={handleConfirmBikeReturned}
                             style={{
@@ -432,6 +441,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
             <div className="col">
               {rentals.length > 0 && (
                 <button
+                  type="button"
                   className="btn btn-info"
                   onClick={handleShowAllRentals}
                   style={{ margin: "0 auto", display: "block" }}
@@ -510,6 +520,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
           <div className="row mt-4">
             <div className="col">
               <button
+                type="button"
                 className="btn btn-info"
                 onClick={handleShowCurrentRental}
                 style={{ margin: "0 auto", display: "block" }}
@@ -523,6 +534,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
       <div className="row mt-4">
         <div className="col">
           <button
+            type="button"
             className="btn btn-info"
             onClick={() => setLenderRentals(false)}
             style={{ margin: "0 auto", display: "block" }}

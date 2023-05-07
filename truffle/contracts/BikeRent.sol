@@ -6,14 +6,6 @@ import "../node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./Utilities.sol";
 
 /**
- * @dev Interface of the VaultW2R contract.
- */
-
-interface I4VaultW2R {
-    function distributeW2R(address receiver, uint256 amount) external;
-}
-
-/**
  * @dev Interface of the WhitelistRenters contract.
  */
 
@@ -62,6 +54,7 @@ interface IBikeShare {
 
 /**
  * @title BikeRent
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @dev The contract interacts with BikeShare contracts, LenderWhitelist, and VaultW2R contracts.
  * It uses the Utilities contract as a base and implements SafeERC20 to handle token transfers.
  */
@@ -171,9 +164,6 @@ contract BikeRent is Utilities {
     uint private constant DAY_SECONDS = 24 hours;
     uint private constant DAILY_CALL_LIMIT = 3;
 
-    // import VaultW2R interface
-    I4VaultW2R private vaultW2R;
-
     // instantiate IlenderWhitelist interface
     IlenderWhitelist private LenderWhitelist;
 
@@ -192,18 +182,16 @@ contract BikeRent is Utilities {
         address _whitelistRenter,
         address _vaultW2R,
         address _whitelistLender
-    ) Utilities(_renter, _W2Rtoken) {
+    ) Utilities(_renter, _W2Rtoken, _vaultW2R) {
         require(
             _lenderNFT != address(0) &&
                 _whitelistRenter != address(0) &&
-                _vaultW2R != address(0) &&
                 _whitelistLender != address(0),
             "bad address"
         );
         require(msg.sender == _whitelistRenter, "Only wl");
         lenderNFT = _lenderNFT;
         whitelistRenter = _whitelistRenter;
-        vaultW2R = I4VaultW2R(_vaultW2R);
         whitelistLender = _whitelistLender;
     }
 
@@ -648,8 +636,6 @@ contract BikeRent is Utilities {
         require(rental.seemsReturned && !rental.isReturned, "bad state");
         rental.isReturned = true;
         uint reward = rental.rewardExpected;
-        // transfer reward from vault to this contract
-        vaultW2R.distributeW2R(address(this), reward);
         // update rewards mapping
         rewards[msg.sender] += reward;
         // increase total rewards
@@ -719,7 +705,7 @@ contract BikeRent is Utilities {
                 : basis;
         }
         if (_bikeShareOwner != address(0)) {
-            require(msg.sender == currentLender, "Only lender");
+            require(msg.sender == currentLender, "lender");
         } else {
             if (!_isCancelledByLender) {
                 bikeShare = IBikeShare(currentLender);
@@ -762,13 +748,18 @@ contract BikeRent is Utilities {
      */
 
     function destroy() external returns (bool) {
-        require(msg.sender == whitelistRenter, "Only whitelist");
-        require(block.timestamp >= safeDate, "safe delay");
+        require(msg.sender == whitelistRenter, "wl");
+        require(block.timestamp >= safeDate, "delay");
         isDeactivated = true;
         isDestroyed = true;
         if (W2R.balanceOf(address(this)) > 0) {
             // transfer all balance of W2R to owner
             W2R.safeTransfer(owner, W2R.balanceOf(address(this)));
+        }
+        if (totalRewards > 0) {
+            uint amount = totalRewards;
+            totalRewards = 0;
+            vaultW2R.distributeW2R(owner, amount);
         }
         emit ContractDestroyed(msg.sender, block.timestamp, address(this));
         return true;

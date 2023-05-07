@@ -5,10 +5,12 @@ pragma solidity ^0.8.9;
 //import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 //import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 //import "@openzeppelin/contracts/access/Ownable.sol";
+//import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../node_modules/@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "../node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @dev Interface for the W2R Vault contract.
@@ -16,6 +18,12 @@ import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 interface I5VaultW2R {
     function distributeW2R(address receiver, uint amount) external;
+
+    function updateIncomes(
+        uint _maticIncome,
+        uint _w2rIncome,
+        uint _date
+    ) external;
 }
 
 /**
@@ -34,10 +42,11 @@ interface IMaticW2RPairToken is IERC20 {
 
 /**
  * @title MaticW2Rdex
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @dev A decentralized exchange for swapping Matic and W2R tokens, providing liquidity and farming.
  */
 
-contract MaticW2Rdex is Ownable {
+contract MaticW2Rdex is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeERC20 for IMaticW2RPairToken;
     IERC20 public W2R;
@@ -45,13 +54,14 @@ contract MaticW2Rdex is Ownable {
     uint public swapRate;
     uint public totalMaticLiquidity;
     uint public totalW2RLiquidity;
-    uint public rewardRatePerSecond;
+    uint public annualYieldPercentage;
     uint public securityPercentage;
     uint public totalMaticFees;
     uint public totalW2RFees;
     uint public feesPercent;
 
     I5VaultW2R vaultW2R;
+    address public vaultW2RAddress;
 
     mapping(address => uint) public LPBalance;
     mapping(address => Farming) public farming;
@@ -101,27 +111,28 @@ contract MaticW2Rdex is Ownable {
      * @dev Constructor that initializes the contract with the token addresses, initial swap rate, Vault W2R address, and LP token address.
      * @param W2RAddress Address of the W2R token contract.
      * @param initialSwapRate Initial swap rate for Matic to W2R conversion.
-     * @param vaultW2RAddress Address of the Vault W2R contract.
+     * @param _vaultW2RAddress Address of the Vault W2R contract.
      * @param lpTokenAddress Address of the LP token contract.
      */
 
     constructor(
         address W2RAddress,
         uint initialSwapRate,
-        address vaultW2RAddress,
+        address _vaultW2RAddress,
         address lpTokenAddress
     ) {
         require(W2RAddress != address(0), "W2R address cannot be 0x0");
         require(initialSwapRate > 0, "Swap rate must be greater than 0");
         require(
-            vaultW2RAddress != address(0),
+            _vaultW2RAddress != address(0),
             "Vault W2R address cannot be 0x0"
         );
         W2R = IERC20(W2RAddress);
         lpToken = IMaticW2RPairToken(lpTokenAddress);
+        vaultW2RAddress = _vaultW2RAddress;
         swapRate = initialSwapRate;
-        rewardRatePerSecond = 10 ** 9; // w2r reward rate per second at the launch of the dex
-        vaultW2R = I5VaultW2R(vaultW2RAddress);
+        annualYieldPercentage = 20;
+        vaultW2R = I5VaultW2R(_vaultW2RAddress);
         securityPercentage = 5;
         feesPercent = 1;
         testAmount = 1000 * 10 ** 18;
@@ -261,9 +272,7 @@ contract MaticW2Rdex is Ownable {
      * @param w2rAmount Amount of W2R tokens to swap for Matic tokens.
      * Emits a SwapW2RForMatic event.
      */
-    function swapW2RForMatic(uint w2rAmount) external {
-        bool guard;
-        require(!guard, "ReentrancyGuard: reentrant call");
+    function swapW2RForMatic(uint w2rAmount) external nonReentrant {
         require(msg.sender.balance > 0, "for MATIC fees");
         require(w2rAmount > 0, "W2R amount must be greater than 0");
         require(
@@ -283,11 +292,9 @@ contract MaticW2Rdex is Ownable {
         totalMaticLiquidity -= (maticAmount - fee);
         totalW2RLiquidity += w2rAmount;
         W2R.safeTransferFrom(msg.sender, address(this), w2rAmount);
-        guard = true;
         (bool success, ) = payable(msg.sender).call{value: maticAmount - fee}(
             ""
         );
-        guard = false;
         require(success, "Transfer failed.");
         emit SwapW2RForMatic(
             msg.sender,
@@ -358,9 +365,9 @@ contract MaticW2Rdex is Ownable {
      * Emits a RemoveLiquidity event.
      */
 
-    function removeLiquidity(uint lpAmount) external checkLPAmount(lpAmount) {
-        bool guard;
-        require(!guard, "ReentrancyGuard: reentrant call");
+    function removeLiquidity(
+        uint lpAmount
+    ) external checkLPAmount(lpAmount) nonReentrant {
         require(lpToken.totalSupply() > 0, "No liquidity to remove");
         require(
             totalMaticLiquidity > 0 && totalW2RLiquidity > 0,
@@ -372,16 +379,13 @@ contract MaticW2Rdex is Ownable {
         // Calculate the amount of MATIC and W2R to refund
         uint maticAmount = (totalMaticLiquidity * proportion) / 1e18;
         uint w2rAmount = (totalW2RLiquidity * proportion) / 1e18;
-        // update data
         LPBalance[msg.sender] -= lpAmount;
         totalMaticLiquidity -= maticAmount;
         totalW2RLiquidity -= w2rAmount;
-        W2R.safeTransfer(msg.sender, w2rAmount);
         lpToken.transferFrom(msg.sender, address(this), lpAmount);
         lpToken.burn(lpAmount);
-        guard = true;
+        W2R.safeTransfer(msg.sender, w2rAmount);
         (bool success, ) = payable(msg.sender).call{value: maticAmount}("");
-        guard = false;
         require(success, "Failed to send MATIC");
         emit RemoveLiquidity(msg.sender, maticAmount, w2rAmount, lpAmount);
     }
@@ -433,6 +437,8 @@ contract MaticW2Rdex is Ownable {
         uint lpBalance = farming[msg.sender].lpAmount;
         uint lastTime = farming[msg.sender].lastTime;
         uint timeElapsed = block.timestamp - lastTime;
+        uint annualYieldDecimal = annualYieldPercentage * 10 ** 16;
+        uint rewardRatePerSecond = annualYieldDecimal / 31536000;
         uint reward = ((lpBalance * timeElapsed * rewardRatePerSecond) /
             10 ** 18) + farming[msg.sender].rewards;
         return reward;
@@ -447,8 +453,10 @@ contract MaticW2Rdex is Ownable {
     function calculateReward() private returns (uint) {
         uint lpBalance = farming[msg.sender].lpAmount;
         uint timeElapsed = block.timestamp - farming[msg.sender].lastTime;
+        uint annualYieldDecimal = annualYieldPercentage * 10 ** 16;
+        uint rewardRatePerSecond = annualYieldDecimal / 31536000;
         uint basis = (lpBalance * timeElapsed * rewardRatePerSecond) / 10 ** 18;
-        require((basis * feesPercent * 100) >= 10000, "Fees are too high");
+        require((basis * feesPercent * 100) >= 10000, "Risk of bad rounding");
         uint fees = (basis * feesPercent * 100) / 10000;
         uint reward = basis - fees;
         totalW2RFees += fees;
@@ -484,12 +492,12 @@ contract MaticW2Rdex is Ownable {
 
     /**
      * @dev Set the reward rate for farming.
-     * @param _newRewardRate New reward rate per second.
+     * @param _newPercentage New annual yield percentage.
      */
 
-    function setRewardRate(uint _newRewardRate) external onlyOwner {
-        require(_newRewardRate > 0, "Reward rate must be greater than 0");
-        rewardRatePerSecond = _newRewardRate;
+    function setAnnualYieldPercentage(uint _newPercentage) external onlyOwner {
+        require(_newPercentage > 0, "Reward rate must be greater than 0");
+        annualYieldPercentage = _newPercentage;
     }
 
     /**
@@ -508,24 +516,27 @@ contract MaticW2Rdex is Ownable {
     }
 
     /**
-     * @dev Withdraw accumulated fees (W2R and Matic) for the contract owner.
+     * @dev Withdraw accumulated Matic fees for the vault.
      */
-    function withdrawFees() external onlyOwner {
-        require(msg.sender != address(0), "Invalid address");
-        bool guard; // even if it's the owner, we don't want reentrancy !
-        require(!guard, "ReentrancyGuard: reentrant call");
-        if (totalW2RFees > 0) {
-            uint w2rToSend = totalW2RFees;
-            totalW2RFees = 0;
-            vaultW2R.distributeW2R(msg.sender, w2rToSend);
-        }
-        if (totalMaticFees > 0) {
-            uint amount = totalMaticFees;
-            totalMaticFees = 0;
-            (bool success, ) = payable(msg.sender).call{value: amount}("");
-            guard = true;
-            require(success, "Failed to withdraw fees");
-        }
+    function withdrawMaticFeesToVault() external onlyOwner nonReentrant {
+        require(vaultW2RAddress != address(0), "Invalid address");
+        require(totalMaticFees > 0, "No fees to withdraw");
+        uint amount = totalMaticFees;
+        totalMaticFees = 0;
+        (bool success, ) = payable(vaultW2RAddress).call{value: amount}("");
+        require(success, "Failed to withdraw fees");
+    }
+
+    /**
+     * @dev Withdraw accumulated W2R fees to the vault.
+     */
+    function withdrawW2RFeesToVault() external onlyOwner {
+        require(vaultW2RAddress != address(0), "Invalid address");
+        require(totalW2RFees > 0, "No fees to withdraw");
+        uint w2rToSend = totalW2RFees;
+        totalW2RFees = 0;
+        W2R.safeTransfer(vaultW2RAddress, w2rToSend);
+        vaultW2R.updateIncomes(0, w2rToSend, block.timestamp);
     }
 
     /**

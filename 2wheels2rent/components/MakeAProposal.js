@@ -407,6 +407,7 @@ const MakeProposal = ({
           )}
           <hr />
           <button
+          type="button"
             onClick={() => setMakeProposal(false)}
             className="btn btn-danger"
             style={{ margin: "0 auto", display: "block" }}

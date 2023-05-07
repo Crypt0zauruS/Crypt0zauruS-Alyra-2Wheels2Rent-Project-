@@ -7,6 +7,7 @@ import {
   useMap,
   useMapEvent,
 } from "react-leaflet";
+import axios from "axios";
 import { useWeb3Context } from "../context/";
 import useImageClassifier from "../hooks/useImageClassifier";
 import { Icon, LatLng } from "leaflet";
@@ -102,13 +103,23 @@ const NearbyUsersMap = ({
 
   const fetchPlaceName = async (latitude, longitude, callback) => {
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+      const response = await axios.get(
+        //`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+        `/api/nominatim`,
+        {
+          params: {
+            type: "reverse",
+            format: "json",
+            lat: latitude,
+            lon: longitude,
+            zoom: 18,
+            addressdetails: 1,
+          },
+        }
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        callback && callback(data.display_name);
+      if (response.status === 200) {
+        callback && callback(response.data.display_name);
       } else {
         throw new Error("Erreur lors de la récupération du nom du lieu.");
       }
@@ -245,12 +256,17 @@ const NearbyUsersMap = ({
                         </label>
                       </>
                     )}
-                    <button className="m-2" onClick={() => setModalNFT(true)}>
+                    <button
+                      className="m-2"
+                      onClick={() => setModalNFT(true)}
+                      type="button"
+                    >
                       Mon NFT
                     </button>
                     <button
                       className="m-2"
                       onClick={() => setModalContract(true)}
+                      type="button"
                     >
                       Mon Contrat
                     </button>{" "}
@@ -260,6 +276,7 @@ const NearbyUsersMap = ({
                           <button
                             className="m-2"
                             onClick={() => setCheckProposals(true)}
+                            type="button"
                           >
                             Propositions Reçues
                           </button>
@@ -271,6 +288,7 @@ const NearbyUsersMap = ({
                           <button
                             className="m-2"
                             onClick={() => setCheckMyProposals(true)}
+                            type="button"
                           >
                             {" "}
                             Propositions Envoyées
@@ -295,6 +313,7 @@ const NearbyUsersMap = ({
                           <button
                             className="m-2"
                             onClick={() => setRenterRentals(true)}
+                            type="button"
                           >
                             {" "}
                             Gérer mes locations
@@ -335,6 +354,7 @@ const NearbyUsersMap = ({
                       {user.role === "loueur" && (
                         <div>
                           <button
+                          type="button"
                             onClick={() => {
                               setMakeProposal(true);
                               setProposalAddress(user.ethereumAddress);
@@ -391,6 +411,7 @@ const NearbyUsersMap = ({
       )}
       <div>
         <button
+        type="button"
           className="btn btn-danger m-2 change-location"
           onClick={() => setUpdateGPS(!updateGPS)}
         >
@@ -398,10 +419,10 @@ const NearbyUsersMap = ({
         </button>
         {updateGPS && (
           <>
-            <button className="map-button" onClick={locateMe} disabled={loader}>
+            <button className="map-button" onClick={locateMe} disabled={loader} type="button">
               Me localiser
             </button>
-            <button className="btn btn-danger m-2" onClick={updateRDV}>
+            <button className="btn btn-danger m-2" onClick={updateRDV} type="button">
               Mettre à jour
             </button>
           </>

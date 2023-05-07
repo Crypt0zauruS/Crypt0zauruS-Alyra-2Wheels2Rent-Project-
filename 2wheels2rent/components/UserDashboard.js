@@ -53,7 +53,7 @@ const UserDashboard = ({ props }) => {
   const [loaderContract, setLoaderContract] = useState(false);
   const { address, web3Provider, network, disconnect } = useWeb3Context();
   const [w2Rcontract, setW2Rcontract] = useState(null);
-  const [w2rUserBalance, setW2rUserBalance] = useState(null);
+  const [w2rUserBalance, setW2rUserBalance] = useState(0);
   const [makeProposal, setMakeProposal] = useState(false);
   const [checkProposals, setCheckProposals] = useState(false);
   const [checkMyProposals, setCheckMyProposals] = useState(false);
@@ -108,6 +108,28 @@ const UserDashboard = ({ props }) => {
     if (!address) return;
     try {
       const infos = await whitelistContract.whitelistedAddresses(address);
+      if (infos[1] === "0x0000000000000000000000000000000000000000") {
+        alert(
+          "Votre contrat est introuvable, merci de  vous réinscrire ! L'application étant en développement, il se peut qu'une mise à jour ait causé cela, et je m'en excuse !"
+        );
+        try {
+          await fetch("/api/removeUser", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ethereumAddress: address,
+            }),
+          });
+        } catch (error) {
+          console.log(error);
+        } finally {
+          disconnect();
+          window.location.reload();
+          return;
+        }
+      }
       setUserInfos({
         contractAddress: infos[1],
         NFTId: parseInt(infos[2]._hex),
@@ -179,6 +201,7 @@ const UserDashboard = ({ props }) => {
             ". Vous pouvez peut-être annuler votre location si le vélo n'a pas encore été pris, puis vous désinscrire.",
           true
         );
+        setLoaderContract(false);
         return;
       }
       const balance = await w2Rcontract.balanceOf(userInfos.contractAddress);
@@ -240,7 +263,7 @@ const UserDashboard = ({ props }) => {
     if (!w2Rcontract) return;
     try {
       const balance = await w2Rcontract.balanceOf(address);
-      setW2rUserBalance(Number(ethers.utils.formatEther(balance)).toFixed(2));
+      setW2rUserBalance(Number(ethers.utils.formatEther(balance)));
     } catch (error) {
       console.log(error);
     }
@@ -389,12 +412,13 @@ const UserDashboard = ({ props }) => {
                   Bienvenue {name} ! <br />
                   W2R sur votre wallet:{" "}
                   <span style={{ fontStyle: "italic", color: "orange" }}>
-                    {w2rUserBalance}
+                    {w2rUserBalance?.toFixed(2)}
                   </span>{" "}
                   {window?.ethereum &&
                     network.chainId === 80001 &&
                     w2rToken && (
                       <button
+                        type="button"
                         onClick={() => addToken(w2rToken)}
                         className="m-3 fs-6"
                         style={{ borderRadius: "10px" }}

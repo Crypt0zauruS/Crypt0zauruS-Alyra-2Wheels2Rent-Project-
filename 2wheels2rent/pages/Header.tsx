@@ -67,7 +67,10 @@ export default function Header() {
         <div className="container-fluid">
           <div className="row">
             <div className="col-xs-12">
-              <h1 className="animate__animated animate__backInRight">
+              <h1
+                className="animate__animated animate__backInRight"
+                onClick={closeNav}
+              >
                 <Link href="/">
                   <br />
                   <span style={{ color: "rgb(8, 201, 118)" }}>2</span>
@@ -121,20 +124,26 @@ export default function Header() {
                   <br />
                   <div className="overlay-content">
                     {!address ? (
-                      <Web3Button />
+                      <div style={{ marginLeft: "-80px" }}>
+                        <Web3Button />
+                      </div>
                     ) : (
-                      <h2>
-                        compte:{" "}
-                        {address.slice(0, 6) + "..." + address.slice(-4)} -
-                        balance: {pognon} MATIC
-                      </h2>
+                      <Link href="/">
+                        <h2 onClick={closeNav}>
+                          compte:{" "}
+                          {address.slice(0, 6) + "..." + address.slice(-4)} -
+                          balance: {pognon} MATIC
+                        </h2>
+                      </Link>
                     )}
                   </div>
                   <br />
                   <div>
                     {address && (
                       <Link href="/dex">
-                        <h2 style={{ cursor: "pointer" }}>DEX</h2>
+                        <h2 style={{ cursor: "pointer" }} onClick={closeNav}>
+                          DEX
+                        </h2>
                       </Link>
                     )}
                   </div>

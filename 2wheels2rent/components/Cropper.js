@@ -126,6 +126,7 @@ const ImageCropper = ({ props }) => {
           {croppedImage && (
             <>
               <button
+                type="button"
                 onClick={() => {
                   setCropping(false);
                   setPicture(null);
@@ -138,6 +139,7 @@ const ImageCropper = ({ props }) => {
                 Annuler
               </button>
               <button
+                type="button"
                 onClick={() => {
                   onUpload();
                   setTimeout(() => {
@@ -157,6 +159,7 @@ const ImageCropper = ({ props }) => {
           )}
         </div>
         <button
+          type="button"
           className="crop-button btn btn-info"
           style={{
             display: image === null || croppedImage !== null ? "none" : "block",
@@ -166,6 +169,7 @@ const ImageCropper = ({ props }) => {
           Rogner
         </button>
         <button
+        type="button"
           style={{
             display: image === null || croppedImage !== null ? "none" : "block",
           }}

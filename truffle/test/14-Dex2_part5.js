@@ -501,7 +501,7 @@ contract("MaticW2Rdex", (accounts) => {
       );
     });
   });
-  describe("withdrw fess", () => {
+  describe("withdraw fees", () => {
     it("should allow owner to withdraw fees successfully", async () => {
       await W2RInstance.approve(
         MaticW2RdexInstance.address,
@@ -523,9 +523,13 @@ contract("MaticW2Rdex", (accounts) => {
         value: MaticToSwap,
       });
 
-      const initialMaticBalance = await web3.eth.getBalance(owner);
-      await MaticW2RdexInstance.withdrawFees({ from: owner });
-      const finalMaticBalance = await web3.eth.getBalance(owner);
+      const initialMaticBalance = await web3.eth.getBalance(
+        VaultW2RInstance.address
+      );
+      await MaticW2RdexInstance.withdrawMaticFeesToVault({ from: owner });
+      const finalMaticBalance = await web3.eth.getBalance(
+        VaultW2RInstance.address
+      );
       assert.isTrue(
         new BN(finalMaticBalance).gt(new BN(initialMaticBalance)),
         "Final Matic balance should be greater than initial balance after withdrawFees"

@@ -45,12 +45,13 @@ interface I1TwoWheels2RentLender {
 
 /**
 
-@title LenderWhitelist
-@notice LenderWhitelist is a contract for managing a whitelist of approved lenders for the TwoWheels2Rent platform. 
-It allows lenders to register their bikes, mint NFTs representing their bikes, and deploy BikeShare contracts.
-@dev This contract is responsible for maintaining the whitelist of lenders, handling the creation of BikeShare contracts, 
-and interacting with the TwoWheels2RentLender, W2R token, and RenterWhitelist contracts. 
-It also manages the lender blacklist.
+* @title LenderWhitelist
+* @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
+* @notice LenderWhitelist is a contract for managing a whitelist of approved lenders for the TwoWheels2Rent platform. 
+* It allows lenders to register their bikes, mint NFTs representing their bikes, and deploy BikeShare contracts.
+* @dev This contract is responsible for maintaining the whitelist of lenders, handling the creation of BikeShare contracts, 
+* and interacting with the TwoWheels2RentLender, W2R token, and RenterWhitelist contracts. 
+* It also manages the lender blacklist.
 */
 
 contract LenderWhitelist is Ownable {
@@ -80,6 +81,8 @@ contract LenderWhitelist is Ownable {
     mapping(address => Lender) public whitelistedAddresses;
     // blacklist mapping
     mapping(address => bool) public blacklistedAddresses;
+    // mapping of last subscription timestamp
+    mapping(address => uint) private lastSubscriptionTimestamp;
 
     I1TwoWheels2RentLender TW2RL;
 
@@ -148,6 +151,11 @@ contract LenderWhitelist is Ownable {
     ) external {
         require(!blacklistedAddresses[msg.sender], "bl");
         require(!whitelistedAddresses[msg.sender].isWhitelisted, "wl");
+        uint currentTime = block.timestamp;
+        require(
+            currentTime - lastSubscriptionTimestamp[msg.sender] >= 2 days,
+            "once in 2 days"
+        );
         require(
             whitelistedAddresses[msg.sender].bikeShareContract == address(0),
             "deployed"
@@ -159,7 +167,7 @@ contract LenderWhitelist is Ownable {
                 bytes(model).length > 0 &&
                 bytes(serial).length > 0 &&
                 bytes(registration).length > 0,
-            "Empty fields"
+            "empty"
         );
         require(
             bytes(name).length <= 40 &&
@@ -184,7 +192,7 @@ contract LenderWhitelist is Ownable {
         );
         // deploy bikeShare contract
         deployBikeShareContract();
-        // emit event
+        lastSubscriptionTimestamp[msg.sender] = currentTime;
         emit LenderWhitelisted(
             msg.sender,
             whitelistedAddresses[msg.sender].NFTId
@@ -283,14 +291,14 @@ contract LenderWhitelist is Ownable {
         // burn NFT
         require(
             TW2RL.burnNFT(whitelistedAddresses[_address].NFTId),
-            "Can't burn NFT"
+            "Can't burn"
         );
         // destroy bikeShare contract
         bikeShare = BikeShare(whitelistedAddresses[_address].bikeShareContract);
         require(bikeShare.destroy(), "Can't destroy");
         require(
             vaultW2R.removeApprovedContract(address(bikeShare)),
-            "Error removing"
+            "error removing"
         );
         // remove address from whitelist
         delete whitelistedAddresses[_address];
@@ -303,6 +311,6 @@ contract LenderWhitelist is Ownable {
     */
 
     function renounceOwnership() public view override onlyOwner {
-        revert("cannot be renounced");
+        revert("cant renounce");
     }
 }

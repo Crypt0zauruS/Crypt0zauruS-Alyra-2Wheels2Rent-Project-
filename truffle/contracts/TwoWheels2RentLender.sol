@@ -11,6 +11,7 @@ import "./Base64.sol";
 
 /**
  * @title TwoWheels2RentLender
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @notice A contract for minting and burning NFTs representing bikes available for rent on the 2Wheels2Rent platform.
  * @dev This contract extends ERC721URIStorage and Ownable from OpenZeppelin contracts.
  */

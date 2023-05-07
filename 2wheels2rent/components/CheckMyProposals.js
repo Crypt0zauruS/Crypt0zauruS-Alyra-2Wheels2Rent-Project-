@@ -209,6 +209,7 @@ const CheckMyProposals = ({
                   W2R
                   <br />
                   <button
+                  type="button"
                     disabled={loading}
                     className="btn btn-warning fs-5 m-2"
                     onClick={() => handleCancelProposal(lender)}
@@ -222,6 +223,7 @@ const CheckMyProposals = ({
         )}
       </ul>
       <button
+      type="button"
         onClick={() => setCheckMyProposals(false)}
         className="btn btn-danger"
         style={{ margin: "0 auto", display: "block" }}

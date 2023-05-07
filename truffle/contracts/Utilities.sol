@@ -7,7 +7,25 @@ import "../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
+@title I3VaultW2R Interface
+@notice This is the interface of the VaultW2R contract that handles distribution of W2R tokens.
+*/
+
+interface I3VaultW2R {
+    function distributeW2R(address receiver, uint256 amount) external;
+
+    function receiveDepositsWhenDestroyed(
+        address _lenderContractOwner,
+        address _renterContract,
+        address _renterContractOwner,
+        uint _date,
+        uint _amount
+    ) external;
+}
+
+/**
  * @title Utilities
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @notice A contract for managing utility services and token deposits common to both the Lender and Renter contracts.
  * @dev This contract uses OpenZeppelin's SafeERC20 library to handle the W2R token
  */
@@ -83,10 +101,17 @@ contract Utilities {
         address indexed _contractAddress
     );
 
+    event RewardClaimed(
+        address indexed _owner,
+        uint _date,
+        uint _amount,
+        address indexed _contractAddress
+    );
+
     uint public totalRentals;
     // safe date to authorize destruction
     uint public safeDate;
-
+    // for historical purpose
     mapping(address => uint) rewards;
     uint totalRewards;
     address public owner;
@@ -110,13 +135,23 @@ contract Utilities {
      * @param _W2Rtoken The address of the W2R token contract
      */
 
-    constructor(address _ownerOfContract, address _W2Rtoken) {
-        require(_ownerOfContract != address(0));
-        require(_W2Rtoken != address(0));
+    constructor(
+        address _ownerOfContract,
+        address _W2Rtoken,
+        address _vaultW2R
+    ) {
+        require(
+            _ownerOfContract != address(0) &&
+                _W2Rtoken != address(0) &&
+                _vaultW2R != address(0)
+        );
         owner = _ownerOfContract;
         W2R = IERC20(_W2Rtoken);
+        vaultW2R = I3VaultW2R(_vaultW2R);
         isDeactivated = true;
     }
+
+    I3VaultW2R vaultW2R;
 
     /**
      * @notice Sets the GPS location of the contract owner
@@ -156,7 +191,7 @@ contract Utilities {
         string calldata _latitude,
         string calldata _longitude
     ) external onlyOwner {
-        require(isDeactivated && !isDestroyed, "Activated or destroyed");
+        require(isDeactivated && !isDestroyed, "unavailable");
         require(
             bytes(_latitude).length > 0 && bytes(_longitude).length > 0,
             "no GPS"
@@ -174,8 +209,8 @@ contract Utilities {
     function depositW2R(
         uint _amount
     ) external isActivated checkAllowance(_amount) {
-        require(_amount > 0, "bad amount");
-        require(W2R.balanceOf(msg.sender) >= _amount, "Insufficient W2R");
+        require(_amount > 0, "bad");
+        require(W2R.balanceOf(msg.sender) >= _amount, "Insufficient");
         W2R.safeTransferFrom(msg.sender, address(this), _amount);
         emit W2Rdeposited(msg.sender, _amount, block.timestamp, address(this));
     }
@@ -193,5 +228,19 @@ contract Utilities {
         returns (uint)
     {
         return totalRewards;
+    }
+
+    /**
+     * @notice Claim the accumulated rewards for the contract owner.
+     * @dev This function can only be called by the contract owner and when the staking contract is activated.
+     * The total rewards are set to zero after claiming, and the rewards are distributed through the vault.
+     */
+
+    function claimRewards() external isActivated onlyOwner {
+        require(totalRewards > 0, "nothing");
+        uint amount = totalRewards;
+        totalRewards = 0;
+        vaultW2R.distributeW2R(msg.sender, amount);
+        emit RewardClaimed(msg.sender, block.timestamp, amount, address(this));
     }
 }

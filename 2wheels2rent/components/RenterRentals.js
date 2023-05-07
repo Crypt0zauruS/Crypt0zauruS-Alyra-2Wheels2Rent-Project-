@@ -300,6 +300,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                                 )}
                                 {!rentalToken && !rental.isReturned && (
                                   <button
+                                    type="button"
                                     className="btn btn-warning m-2"
                                     onClick={handleGenerateToken}
                                     disabled={
@@ -322,6 +323,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                                     ? "suggérée car l'heure du RDV est dépassée"
                                     : "possible"}
                                   <button
+                                    type="button"
                                     className="btn btn-warning m-2"
                                     onClick={handleCancelRenting}
                                     disabled={loading}
@@ -332,6 +334,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
                                   Je suis avec le loueur, je clique pour lui
                                   présenter mon QR code:
                                   <button
+                                    type="button"
                                     className="btn btn-warning m-2"
                                     onClick={handleGenerateToken}
                                     disabled={loading || rentalToken}
@@ -359,6 +362,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
             <div className="col">
               {rentals.length > 0 && (
                 <button
+                  type="button"
                   className="btn btn-info"
                   onClick={handleShowAllRentals}
                   style={{ margin: "0 auto", display: "block" }}
@@ -437,6 +441,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
           <div className="row mt-4">
             <div className="col">
               <button
+                type="button"
                 className="btn btn-info"
                 onClick={handleShowCurrentRental}
                 style={{ margin: "0 auto", display: "block" }}
@@ -450,6 +455,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
       <div className="row mt-4">
         <div className="col">
           <button
+            type="button"
             className="btn btn-info"
             onClick={() => setRenterRentals(false)}
             style={{ margin: "0 auto", display: "block" }}
@@ -467,6 +473,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
           <h3 className="fs-5">QR Code :</h3>
           <QRCode value={rentalToken} />
           <button
+          type="button"
             className="btn btn-danger m-2"
             disabled={loading}
             onClick={() => setRentalToken("")}

@@ -11,6 +11,7 @@ import "./Base64.sol";
 
 /**
  * @title TwoWheels2RentRenter
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @notice This contract is used for creating and managing 2Wheels2Rent Renter NFTs
  * @dev This contract inherits from ERC721URIStorage, Ownable, and uses the Counters library
  */

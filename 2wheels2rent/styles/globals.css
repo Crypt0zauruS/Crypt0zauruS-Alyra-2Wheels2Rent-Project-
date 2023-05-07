@@ -1010,7 +1010,7 @@ iframe {
   position: absolute;
   width: 100px;
   right: 0;
-  margin-top: 220px;
+  margin-top: 300px;
   margin-right: 20px;
 }
 
@@ -1063,6 +1063,7 @@ iframe {
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 310px;
 }
 
 .swap-inputs {
@@ -1115,6 +1116,7 @@ iframe {
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 250px;
 }
 
 .balance {
@@ -1144,6 +1146,48 @@ iframe {
 
 .dex-container h3 {
   font-size: 1rem;
+}
+
+.rewards h2 {
+  font-size: 1.1rem !important;
+}
+
+/* Staking */
+.staking input[type="number"] {
+  width: 80% !important;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #c9c9c9;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.futuristic-range {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #d67423, #0984e3);
+  outline: none;
+  margin: 0;
+}
+
+.futuristic-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2fa9be;
+  cursor: pointer;
+  box-shadow: 0 0 4px #777;
+}
+
+.futuristic-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #dfe6e9;
+  cursor: pointer;
+  box-shadow: 0 0 4px #777;
 }
 
 /* MEDIA QUERIES */
@@ -1225,6 +1269,14 @@ iframe {
 
   #qr-code-reader {
     width: 250px !important;
+  }
+
+  .rewards button {
+    font-size: 0.8rem;
+  }
+
+  .image-container {
+    display: none;
   }
 }
 
@@ -1352,6 +1404,9 @@ iframe {
 @media (max-width: 350px) {
   .instructions {
     margin-top: 1300px !important;
+  }
+  .contracts-copies {
+    display: none;
   }
 }
 

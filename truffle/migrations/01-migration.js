@@ -3,6 +3,8 @@ const initialSupply = 160000000; // DECIMALS ALREADY IN THE CONSTRUCTOR !!!
 const VaultW2R = artifacts.require("VaultW2R");
 const MaticW2RPairToken = artifacts.require("MaticW2RPairToken");
 const MaticW2Rdex = artifacts.require("MaticW2Rdex");
+const MockPriceFeed = artifacts.require("MockPriceFeed");
+const W2RStaking = artifacts.require("W2RStaking");
 const initialSwapRate = 10;
 const TwoWheels2RentLender = artifacts.require("TwoWheels2RentLender");
 const TwoWheels2RentRenter = artifacts.require("TwoWheels2RentRenter");
@@ -12,6 +14,11 @@ const lenderIPFS =
   "bafybeif7bo3qj2ltdqiooyiqzl4wzxzqf5saxyfdoc6n3k7pnkydmm3kd4";
 const renterIPFS =
   "bafybeihc4a3whkac7bg3eyaagki3j3emhshtzjymtieltp33ybkmkxqzfq";
+// MATIC/USD price feeds
+const priceFeedMumbai = "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada";
+//const priceFeedMainnet = "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0";
+const priceDecimals = 8; // Price feeds use 8 decimals when returning fiat values (ex: USD)
+const initialPrice = 120000000; // 1.20 USD with 8 decimals
 
 // pauses necessary to deploy in testnet without errors
 function sleep(ms) {
@@ -19,6 +26,7 @@ function sleep(ms) {
 }
 
 module.exports = async (deployer, network, accounts) => {
+  let priceFeed;
   try {
     // Deploy W2R
     await deployer.deploy(W2R, initialSupply);
@@ -47,6 +55,7 @@ module.exports = async (deployer, network, accounts) => {
     );
 
     if (network === "mumbai") await sleep(5000);
+
     // Deploy MaticW2Rdex
     await deployer.deploy(
       MaticW2Rdex,
@@ -58,7 +67,7 @@ module.exports = async (deployer, network, accounts) => {
     const MaticW2RdexInstance = await MaticW2Rdex.deployed();
     console.log("MaticW2Rdex address: ", MaticW2RdexInstance.address);
 
-    if (network === "mumbai") await sleep(5000);
+    if (network === "mumbai") await sleep(10000);
 
     // add DEX as authorized Minter and Burner in LP token
     await MaticW2RPairTokenInstance.addMinterAndBurner(
@@ -74,6 +83,34 @@ module.exports = async (deployer, network, accounts) => {
       true
     );
     console.log("DEX address set in VaultW2R contract");
+
+    // Deploy Staking contract
+    if (network === "development" || network === "testing") {
+      await deployer.deploy(MockPriceFeed, priceDecimals, initialPrice);
+      const MockPriceFeedInstance = await MockPriceFeed.deployed();
+      priceFeed = MockPriceFeedInstance.address;
+      console.log("MockPriceFeed address: ", MockPriceFeedInstance.address);
+    }
+
+    if (network === "mumbai") {
+      priceFeed = priceFeedMumbai;
+    }
+
+    await deployer.deploy(
+      W2RStaking,
+      W2RInstance.address,
+      priceFeed,
+      VaultW2RInstance.address
+    );
+    const W2RStakingInstance = await W2RStaking.deployed();
+    console.log("W2RStaking address: ", W2RStakingInstance.address);
+
+    // add Staking address to VaultW2R approved addresses
+    await VaultW2RInstance.setApprovedContract(
+      W2RStakingInstance.address,
+      true
+    );
+    console.log("Staking address set in VaultW2R contract");
 
     // Deploy TwoWheels2RentLender NFT contract
     await deployer.deploy(TwoWheels2RentLender);

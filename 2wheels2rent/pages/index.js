@@ -11,6 +11,9 @@ import SpecialLoader from "../components/SpecialLoader";
 import Loader from "../components/Loader";
 import DOMPurify from "isomorphic-dompurify";
 import Link from "next/link";
+import { NextSeo } from "next-seo";
+import SITE_URL from "../config";
+import { ImageUrl } from "../utils";
 import { Contract } from "ethers";
 import LenderWhitelist from "../contracts/LenderWhitelist.json";
 import RenterWhitelist from "../contracts/RenterWhitelist.json";
@@ -99,9 +102,6 @@ export default function Home() {
   };
 
   const blockChainRegistration = async (role) => {
-    if (!validateInputs(role)) {
-      return;
-    }
     const whitelistAbi =
       role === "loueur"
         ? lenderWhitelistAbi
@@ -126,9 +126,16 @@ export default function Home() {
         : role === "emprunteur"
         ? "Emprunteur enregistré sur la blockchain"
         : "";
-    if (!whitelistAddress || !whitelistAbi || !eventToWatch || !successMessage)
-      return;
+
     try {
+      if (
+        !whitelistAddress ||
+        !whitelistAbi ||
+        !eventToWatch ||
+        !successMessage
+      ) {
+        throw new Error("Erreur lors de l'enregistrement sur la blockchain");
+      }
       const signer = web3Provider?.getSigner();
       const whitelistContract = new Contract(
         whitelistAddress,
@@ -161,6 +168,22 @@ export default function Home() {
     }
   };
 
+  const removeUser = async () => {
+    try {
+      await fetch("/api/removeUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ethereumAddress: address,
+        }),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const registerUser = async () => {
     if (!validateInputs(role)) {
       return;
@@ -181,14 +204,7 @@ export default function Home() {
       showToast("Données GPS invalides", true);
       return;
     }
-    try {
-      setLoader(true);
-      await blockChainRegistration(role);
-    } catch (error) {
-      showToast("Problème lors de l'inscription", true);
-      setLoader(false);
-      return;
-    }
+    setLoader(true);
     try {
       const response = await fetch("/api/registerUser", {
         method: "POST",
@@ -207,12 +223,33 @@ export default function Home() {
       });
       const data = await response.json();
       console.log("Utilisateur enregistré sur la BDD:", data.message);
-      showToast("Inscription réalisée avec succés !");
-      await checkUser();
     } catch (error) {
       showToast("Problème lors de l'inscription", true);
-      throw error;
-    } finally {
+      setLoader(false);
+      return;
+    }
+    try {
+      await blockChainRegistration(role);
+    } catch (error) {
+      try {
+        await removeUser();
+      } catch (removeUserError) {
+        console.error(
+          "Erreur lors de la suppression de l'utilisateur :",
+          removeUserError
+        );
+      }
+      showToast("Problème lors de l'inscription", true);
+      setLoader(false);
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+      return;
+    }
+    try {
+      await checkUser();
+    } catch (error) {
+      console.log(error);
       setLoader(false);
     }
   };
@@ -345,6 +382,32 @@ export default function Home() {
 
   return (
     <div style={{ paddingTop: "350px" }}>
+      <NextSeo
+        title="2Wheels2Rent, dApp de location de vélos entre particuliers"
+        description="Bienvenue sur 2Wheels2Rent, l'application décentralisée de location de vélos entre particuliers."
+        openGraph={{
+          url: SITE_URL,
+          title: "2Wheels2Rent, dApp de location de vélos entre particuliers",
+          description:
+            "Bienvenue sur 2Wheels2Rent, l'application décentralisée de location de vélos entre particuliers sur Polygon",
+
+          images: [
+            {
+              url: `${ImageUrl("banner.png")}`,
+              width: 1220,
+              height: 500,
+              alt: "banner",
+              type: "image/png",
+            },
+          ],
+          site_name: "2Wheels2Rent",
+        }}
+        twitter={{
+          handle: "@CryptosaurusRe4",
+          site: "@CryptosaurusRe4",
+          cardType: "summary_large_image",
+        }}
+      />
       <div className="container-fluid">
         {!address && (
           <div className="welcome-message">
@@ -356,9 +419,9 @@ export default function Home() {
             test Mumbai, vous pouvez déjà vous inscrire et profiter de toutes
             les fonctionnalités de l&apos;application.🚴🏽‍♀️🚀
             <hr />
-            Attention, en cas de mise à jour majeure, vous devrez vous
-            réinscrire. Bien sûr, vous pouvez récupérer gratuitement des W2R de
-            test sur notre{" "}
+            Pour le moment, en cas de mise à jour des smart contracts, vous
+            devrez vous réinscrire. Bien sûr, vous pouvez récupérer gratuitement
+            des W2R de test sur notre{" "}
             <Link href="/dex">
               <span
                 style={{
@@ -500,8 +563,12 @@ export default function Home() {
                       onTypeChange={setSelectedType}
                     />
                   ) : null}
-                  <button disabled={loader} onClick={registerUser}>
-                    M&apos;inscrire !
+                  <button
+                    disabled={loader}
+                    onClick={registerUser}
+                    type="button"
+                  >
+                    {loader ? "En cours..." : "M'inscrire !"}
                   </button>
                   <br />
                   <Footer />
@@ -589,7 +656,6 @@ export default function Home() {
             )}
         </div>
       </div>
-
       <ToastContainer />
     </div>
   );

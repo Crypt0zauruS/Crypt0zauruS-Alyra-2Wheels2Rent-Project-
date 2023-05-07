@@ -1,3 +1,5 @@
+import SITE_URL from "../config";
+
 export const checkIfMetamaskConnected = async () => {
   if (window.ethereum) {
     try {
@@ -74,6 +76,10 @@ export const addPolygonToMetamask = async () => {
     }
   }
 };
+
+export function ImageUrl(url) {
+  return SITE_URL + url;
+}
 
 export const bikeBrands = [
   "A-Pro",

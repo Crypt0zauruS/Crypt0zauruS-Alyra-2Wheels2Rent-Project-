@@ -5,6 +5,8 @@ import "animate.css";
 import "react-toastify/dist/ReactToastify.css";
 import type { AppProps } from "next/app";
 import { Web3ContextProvider } from "../context";
+import { DefaultSeo } from "next-seo";
+import SEO from "../next-seo-config";
 import Layout from "../components/Layout";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
@@ -19,6 +21,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <Web3ContextProvider>
       <Layout>
+        <DefaultSeo {...SEO} />
         <Component {...pageProps} />
       </Layout>
     </Web3ContextProvider>

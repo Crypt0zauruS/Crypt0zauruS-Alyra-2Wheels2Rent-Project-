@@ -42,6 +42,7 @@ interface I1TwoWheels2RentRenter {
 
 /**
  * @title RenterWhitelist
+ * @author Crypt0zaurus https://www.linkedin.com/in/maxence-a-a82081260
  * @dev This contract manages a whitelist of renters and their associated BikeRent contracts.
  * It allows renters to be added to the whitelist and to deploy BikeRent contracts.
  * The contract owner can add and remove renters from the blacklist.
@@ -75,6 +76,8 @@ contract RenterWhitelist is Ownable {
     mapping(address => Renter) public whitelistedAddresses;
     // blacklist mapping
     mapping(address => bool) public blacklistedAddresses;
+    // mapping of last subscription timestamp
+    mapping(address => uint) private lastSubscriptionTimestamp;
 
     I1TwoWheels2RentRenter TW2RR;
 
@@ -133,6 +136,11 @@ contract RenterWhitelist is Ownable {
     ) public {
         require(!blacklistedAddresses[msg.sender], "bl");
         require(!whitelistedAddresses[msg.sender].isWhitelisted, "wl");
+        uint currentTime = block.timestamp;
+        require(
+            currentTime - lastSubscriptionTimestamp[msg.sender] >= 2 days,
+            "once in 2 days"
+        );
         require(
             whitelistedAddresses[msg.sender].bikeRentContract == address(0),
             "deployed"
@@ -158,6 +166,7 @@ contract RenterWhitelist is Ownable {
         );
         // deploy bikeRent contract
         deployBikeRentContract();
+        lastSubscriptionTimestamp[msg.sender] = currentTime;
         emit RenterWhitelisted(
             msg.sender,
             whitelistedAddresses[msg.sender].NFTId
