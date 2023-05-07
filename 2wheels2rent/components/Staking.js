@@ -131,11 +131,7 @@ const Staking = ({
       fetchDatas();
     }
   };
-  console.log(
-    Date.now(),
-    (formattedStakingBeginning + 15 * 86400) * 1000,
-    formattedStakingBeginning
-  );
+
   const handleUnstake = async () => {
     if (!validateConditions) return;
     if (Number(unstakeAmount) === 0) return;
