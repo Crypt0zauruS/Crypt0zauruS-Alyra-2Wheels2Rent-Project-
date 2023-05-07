@@ -9,9 +9,10 @@ const MaticPrice = () => {
 
   const fetchMaticPrice = async () => {
     try {
-      const response = await axios.get(
-        "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd%2Ceur"
-      );
+      //const response = await axios.get(
+      // "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd%2Ceur"
+      //);
+      const response = await axios.get("/api/coingecko");
       setPriceUSD(response.data["matic-network"].usd.toFixed(2));
       setPriceEUR(response.data["matic-network"].eur.toFixed(2));
       setDataAvailable(true);
