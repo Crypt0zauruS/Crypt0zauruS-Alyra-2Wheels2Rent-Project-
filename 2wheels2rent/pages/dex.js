@@ -496,8 +496,8 @@ const Dex = () => {
   const getMaticBalance = async () => {
     if (!validateConditions()) return;
     try {
-      const balance = await web3Provider.getBalance(address);
-      const matic = ethers.utils.formatEther(balance);
+      const balance = await web3Provider?.getBalance(address);
+      const matic = balance ? ethers.utils.formatEther(balance) : 0;
       return matic;
     } catch (err) {
       console.log(err);
@@ -562,26 +562,33 @@ const Dex = () => {
 
   const fetchTokenInfo = async () => {
     if (W2Rcontract && pairTokenContract) {
-      const [w2rSymbol, w2rDecimals, lpSymbol, lpDecimals] = await Promise.all([
-        W2Rcontract.symbol(),
-        W2Rcontract.decimals(),
-        pairTokenContract.symbol(),
-        pairTokenContract.decimals(),
-      ]);
+      let w2rSymbol;
+      let w2rDecimals;
+      let lpSymbol;
+      let lpDecimals;
 
-      setW2RToken({
-        tokenAddress: W2Raddress,
-        tokenSymbol: w2rSymbol,
-        tokenDecimals: w2rDecimals,
-        tokenImage: W2Rmini,
-      });
+      try {
+        w2rSymbol = await W2Rcontract?.symbol();
+        w2rDecimals = await W2Rcontract?.decimals();
+        lpSymbol = await pairTokenContract?.symbol();
+        lpDecimals = await pairTokenContract?.decimals();
 
-      setLPToken({
-        tokenAddress: pairTokenAddress,
-        tokenSymbol: lpSymbol,
-        tokenDecimals: lpDecimals,
-        tokenImage: LPmini,
-      });
+        setW2RToken({
+          tokenAddress: W2Raddress,
+          tokenSymbol: w2rSymbol,
+          tokenDecimals: w2rDecimals,
+          tokenImage: W2Rmini,
+        });
+
+        setLPToken({
+          tokenAddress: pairTokenAddress,
+          tokenSymbol: lpSymbol,
+          tokenDecimals: lpDecimals,
+          tokenImage: LPmini,
+        });
+      } catch (err) {
+        console.log(err);
+      }
     }
   };
 

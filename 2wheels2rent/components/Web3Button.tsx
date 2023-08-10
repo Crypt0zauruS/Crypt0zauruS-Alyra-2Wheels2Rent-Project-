@@ -9,30 +9,6 @@ interface ConnectProps {
 }
 const ConnectButton = ({ connect }: ConnectProps) => {
   const [isClient, setIsClient] = useState(false);
-  // const addPolygonToMetamask = async () => {
-  //   if (window.ethereum) {
-  //    try {
-  //      await window.ethereum.request({
-  //        method: "wallet_addEthereumChain",
-  //        params: [
-  //          {
-  //           chainId: "0x89",
-  //           chainName: "Polygon Network",
-  //           nativeCurrency: {
-  //             name: "MATIC",
-  //             symbol: "MATIC",
-  //             decimals: 18,
-  //           },
-  //           rpcUrls: ["https://rpc-mainnet.maticvigil.com/"],
-  //           blockExplorerUrls: ["https://polygonscan.com/"],
-  //         },
-  //       ],
-  //     });
-  //  } catch (error) {
-  //    console.log(error);
-  //  }
-  // }
-  //};
 
   useEffect(() => {
     setIsClient(true);
