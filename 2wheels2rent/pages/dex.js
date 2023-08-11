@@ -73,6 +73,7 @@ const Dex = () => {
 
   const validateConditions = () => {
     if (!address) return false;
+    if (!signer) return false;
     if (!web3Provider) return false;
     if (!network) return false;
     if (!dexAddress) return false;
@@ -561,6 +562,7 @@ const Dex = () => {
   };
 
   const fetchTokenInfo = async () => {
+    if (!validateConditions()) return;
     if (W2Rcontract && pairTokenContract) {
       let w2rSymbol;
       let w2rDecimals;
@@ -610,9 +612,13 @@ const Dex = () => {
 
   const refreshData = async () => {
     if (validateConditions()) {
-      await fetchBalances();
-      await getMaticBalance();
-      await fetchTokenInfo();
+      try {
+        await fetchBalances();
+        await getMaticBalance();
+        await fetchTokenInfo();
+      } catch (err) {
+        console.log(err);
+      }
     }
     if (!address) {
       setUserBalances({
@@ -1381,11 +1387,6 @@ const Dex = () => {
               il n&apos;est pas encore possible de l&apos;utiliser sur Mumbai.
               En attendant, vous pouvez réclamer vos W2R de test en connectant
               votre wallet pour utiliser l&apos;application.
-              <br />
-              Je songe toutefois à créer prochainement un token temporaire ERC20
-              &quot;testMATIC&quot; pour que vous puissiez tester le Dex en
-              conditions réelles. Ceci dit, cela demandera de réécrire les
-              fonctions du DEX car le MATIC n&apos;est pas un ERC20.
             </h1>
             <hr />
             <h1 className="text-center fs-5">
