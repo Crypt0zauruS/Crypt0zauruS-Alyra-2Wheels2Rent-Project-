@@ -5,7 +5,7 @@ import fr from "date-fns/locale/fr";
 import QRCode from "qrcode.react";
 import Loader from "./Loader";
 
-const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
+const RenterRentals = ({ setRenterRentals, contract, showToast, gasPrice }) => {
   const [rental, setRental] = useState({});
   const [rentals, setRentals] = useState([]);
   const [rentalToken, setRentalToken] = useState("");
@@ -23,7 +23,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
     if (rental.cantCancel) return;
     setLoading(true);
     try {
-      const tx = await contract.cancelRenting();
+      const tx = await contract.cancelRenting({ gasPrice: gasPrice });
       await tx.wait();
       contract.once("RentalCancelled", (lender, refund) => {
         showToast(
@@ -75,7 +75,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
 
   const handleDeclareReturn = async () => {
     try {
-      const tx = await contract.returnBike();
+      const tx = await contract.returnBike({ gasPrice: gasPrice });
       await tx.wait();
       contract.once("RentalDeclaredAsReturned", (lender, date, renter) => {
         showToast(`Location déclarée comme retournée pour ${lender}`);
@@ -105,7 +105,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
       alert("Vous aurez 2 transactions à valider");
     }
     try {
-      const tx = await contract.setRentalToken(token);
+      const tx = await contract.setRentalToken(token, { gasPrice: gasPrice });
       await tx.wait();
     } catch (error) {
       console.error("Erreur lors de la mise à jour du token :", error);
@@ -473,7 +473,7 @@ const RenterRentals = ({ setRenterRentals, contract, showToast }) => {
           <h3 className="fs-5">QR Code :</h3>
           <QRCode value={rentalToken} />
           <button
-          type="button"
+            type="button"
             className="btn btn-danger m-2"
             disabled={loading}
             onClick={() => setRentalToken("")}

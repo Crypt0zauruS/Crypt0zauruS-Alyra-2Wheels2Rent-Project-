@@ -10,6 +10,7 @@ const CheckMyProposals = ({
   showToast,
   web3Provider,
   bikeShareAbi,
+  gasPrice,
 }) => {
   const [proposals, setProposals] = useState([]);
   const [proposalsToDelete, setProposalsToDelete] = useState([]);
@@ -99,7 +100,7 @@ const CheckMyProposals = ({
     }
     setLoading(true);
     try {
-      const tx = await contract.cancelProposal(lender);
+      const tx = await contract.cancelProposal(lender, { gasPrice: gasPrice });
       await tx.wait();
       contract.once("ProposalCancelled", (lender, date, contract) => {
         console.log(lender, date, contract);
@@ -209,7 +210,7 @@ const CheckMyProposals = ({
                   W2R
                   <br />
                   <button
-                  type="button"
+                    type="button"
                     disabled={loading}
                     className="btn btn-warning fs-5 m-2"
                     onClick={() => handleCancelProposal(lender)}
@@ -223,7 +224,7 @@ const CheckMyProposals = ({
         )}
       </ul>
       <button
-      type="button"
+        type="button"
         onClick={() => setCheckMyProposals(false)}
         className="btn btn-danger"
         style={{ margin: "0 auto", display: "block" }}

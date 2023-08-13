@@ -4,15 +4,15 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com;
   img-src * blob: data: a.tile.openstreetmap.org b.tile.openstreetmap.org c.tile.openstreetmap.org;
   media-src 'none';
-  connect-src * api.coingecko.com tile.openstreetmap.org nominatim.openstreetmap.org m.youtube.com verify.walletconnect.com explorer-api.walletconnect.com;
+  connect-src * api.coingecko.com tile.openstreetmap.org nominatim.openstreetmap.org m.youtube.com verify.walletconnect.com explorer-api.walletconnect.com relay.walletconnect.com;
   font-src 'self';
-  frame-src 'self' m.youtube.com verify.walletconnect.com explorer-api.walletconnect.com;
+  frame-src 'self' m.youtube.com verify.walletconnect.com explorer-api.walletconnect.com relay.walletconnect.com;
 
 `.replace(/\n/g, "");
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: ContentSecurityPolicy },
-  { key: "Referrer-Policy", value: "no-referrer" },
+  { key: "Referrer-Policy", value: "origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-DNS-Prefetch-Control", value: "on" },

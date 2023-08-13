@@ -42,7 +42,8 @@ export default function Home() {
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   // Web3 context
-  const { address, network, web3Provider, disconnect } = useWeb3Context();
+  const { address, network, web3Provider, disconnect, gasPrice } =
+    useWeb3Context();
   const [name, setName] = useState("");
   // Lender whitelist contract
   const lenderWhitelistAbi = LenderWhitelist.abi;
@@ -149,11 +150,13 @@ export default function Home() {
               selectedBrand.value,
               model,
               serialNumber,
-              registrationNumber
+              registrationNumber,
+              { gasPrice: gasPrice }
             )
           : await whitelistContract.setRenterInfoAndMint(
               pseudo,
-              selectedType.value
+              selectedType.value,
+              { gasPrice: gasPrice }
             );
       whitelistContract.once(eventToWatch, (address, NFTId, event) => {
         console.log("event", event, "address", address, "NFTId", NFTId);

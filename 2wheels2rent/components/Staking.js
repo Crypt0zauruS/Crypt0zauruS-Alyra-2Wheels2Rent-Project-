@@ -18,6 +18,7 @@ const Staking = ({
   setStakingAddress,
   hasTooManyDecimals,
   showToast,
+  gasPrice,
 }) => {
   const W2RStakingAbi = W2RStaking.abi;
   const [stakingContract, setStakingContract] = useState();
@@ -110,7 +111,8 @@ const Staking = ({
       const tx = await stakingContract.stake(
         w2r,
         formattedStakerAmount > 0 && !extendLock ? 0 : Number(lockPeriod),
-        extendLock
+        extendLock,
+        { gasPrice: gasPrice }
       );
       await tx.wait();
       stakingContract.once("Staked", (user, amount) => {
@@ -147,7 +149,9 @@ const Staking = ({
     try {
       setLoading(true);
       const w2r = ethers.utils.parseEther(unstakeAmount.toString(), 18);
-      const tx = await stakingContract.unstake(w2r, proportionalReward);
+      const tx = await stakingContract.unstake(w2r, proportionalReward, {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       stakingContract.once("Unstaked", (user, amount) => {
         console.log("Unstaked:", user, amount);
@@ -174,7 +178,7 @@ const Staking = ({
     }
     try {
       setLoading(true);
-      const tx = await stakingContract.claimReward();
+      const tx = await stakingContract.claimReward({ gasPrice: gasPrice });
       await tx.wait();
       stakingContract.once("RewardClaimed", (user, amount) => {
         console.log("RewardClaimed:", user, amount);

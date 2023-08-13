@@ -15,6 +15,7 @@ const MakeProposal = ({
   w2Rcontract,
   contract,
   userInfos,
+  gasPrice,
 }) => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -134,7 +135,8 @@ const MakeProposal = ({
         bikeShareAddress,
         dateMin,
         dateMax,
-        rentalTime
+        rentalTime,
+        { gasPrice: gasPrice }
       );
       await tx.wait();
       // catch event emitted by Renter contract
@@ -407,7 +409,7 @@ const MakeProposal = ({
           )}
           <hr />
           <button
-          type="button"
+            type="button"
             onClick={() => setMakeProposal(false)}
             className="btn btn-danger"
             style={{ margin: "0 auto", display: "block" }}

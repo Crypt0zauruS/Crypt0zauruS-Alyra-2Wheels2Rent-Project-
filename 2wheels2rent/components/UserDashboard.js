@@ -51,7 +51,8 @@ const UserDashboard = ({ props }) => {
   const [modalNFT, setModalNFT] = useState(false);
   const [modalContract, setModalContract] = useState(false);
   const [loaderContract, setLoaderContract] = useState(false);
-  const { address, web3Provider, network, disconnect } = useWeb3Context();
+  const { address, web3Provider, network, disconnect, gasPrice } =
+    useWeb3Context();
   const [w2Rcontract, setW2Rcontract] = useState(null);
   const [w2rUserBalance, setW2rUserBalance] = useState(0);
   const [makeProposal, setMakeProposal] = useState(false);
@@ -209,7 +210,9 @@ const UserDashboard = ({ props }) => {
       const formattedBalance = Number(
         ethers.utils.formatUnits(balance, decimals)
       );
-      const tx = await whitelistContract.removeAddressFromWhitelist();
+      const tx = await whitelistContract.removeAddressFromWhitelist({
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       whitelistContract.once(
         role === "loueur"
@@ -301,7 +304,9 @@ const UserDashboard = ({ props }) => {
     // Mettre à jour le lieu de RDV dans le contrat
     setSmallLoader(true);
     try {
-      const tx = await contract.setGPS(newRDV[0], newRDV[1]);
+      const tx = await contract.setGPS(newRDV[0], newRDV[1], {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       contract.once(
         "GPSupdated",
@@ -560,6 +565,7 @@ const UserDashboard = ({ props }) => {
           activated={activated}
           setActivated={setActivated}
           w2rAddress={w2rAddress}
+          gasPrice={gasPrice}
         />
       )}
       {makeProposal && role === "emprunteur" && (
@@ -574,6 +580,7 @@ const UserDashboard = ({ props }) => {
           w2Rcontract={w2Rcontract}
           contract={contract}
           userInfos={userInfos}
+          gasPrice={gasPrice}
         />
       )}
       {checkProposals && role === "loueur" && (
@@ -585,6 +592,7 @@ const UserDashboard = ({ props }) => {
           w2Rcontract={w2Rcontract}
           web3Provider={web3Provider}
           bikeRentAbi={bikeRentAbi}
+          gasPrice={gasPrice}
         />
       )}
       {checkMyProposals && role === "emprunteur" && (
@@ -594,6 +602,7 @@ const UserDashboard = ({ props }) => {
           showToast={showToast}
           web3Provider={web3Provider}
           bikeShareAbi={bikeShareAbi}
+          gasPrice={gasPrice}
         />
       )}
       {lenderRentals && role === "loueur" && (
@@ -601,6 +610,7 @@ const UserDashboard = ({ props }) => {
           setLenderRentals={setLenderRentals}
           contract={contract}
           showToast={showToast}
+          gasPrice={gasPrice}
         />
       )}
       {renterRentals && role === "emprunteur" && (
@@ -608,6 +618,7 @@ const UserDashboard = ({ props }) => {
           setRenterRentals={setRenterRentals}
           contract={contract}
           showToast={showToast}
+          gasPrice={gasPrice}
         />
       )}
       <Footer />

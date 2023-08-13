@@ -100,13 +100,13 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
               style={{ color: "cyan", wordBreak: "break-all" }}
               rel="noreferrer noopener"
               target="_blank"
-              href={`https://testnet.rarible.com/token/polygon/${
+              href={`https://testnets.opensea.io/assets/mumbai/${
                 role === "loueur"
                   ? lenderNFTAddress
                   : role === "emprunteur"
                   ? renterNFTAddress
                   : null
-              }:${NFTId}?tab=properties`}
+              }/${NFTId}`}
             >
               {role === "loueur"
                 ? lenderNFTAddress

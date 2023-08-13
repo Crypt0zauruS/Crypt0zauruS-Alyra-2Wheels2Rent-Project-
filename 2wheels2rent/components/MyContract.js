@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { ethers } from "ethers";
 import Loader from "./Loader";
 import Image from "next/image";
 import W2R from "../private/W2R.png";
+import QRCode from "qrcode.react";
 
 const MyContract = ({
   userInfos,
@@ -21,6 +22,7 @@ const MyContract = ({
   activated,
   setActivated,
   w2rAddress,
+  gasPrice,
 }) => {
   const { contractAddress } = userInfos;
 
@@ -33,6 +35,14 @@ const MyContract = ({
   const [allowance, setAllowance] = useState(0);
   const [rewards, setRewards] = useState(0);
   const [action, setAction] = useState("deposit");
+  const [QrW2R, setQrW2R] = useState(false);
+  const W2Rref = useRef(null);
+
+  const handleClickOutside = (event) => {
+    if (W2Rref.current && !W2Rref.current.contains(event.target)) {
+      setQrW2R(false);
+    }
+  };
 
   const hasTooManyDecimals = (amount) => {
     if (typeof amount !== "string") {
@@ -103,7 +113,9 @@ const MyContract = ({
           showToast("Problème avec les données GPS", true);
           return;
         }
-        const tx = await contract.activate(gps[0], gps[1]);
+        const tx = await contract.activate(gps[0], gps[1], {
+          gasPrice: gasPrice,
+        });
         await tx.wait();
         setActivated(true);
         contract.once("ContractActivated", (owner, date, contAddress) => {
@@ -141,15 +153,19 @@ const MyContract = ({
         }
 
         if (check1) {
-          const tx1 = await contract.setRate(w2rrate);
+          const tx1 = await contract.setRate(w2rrate, { gasPrice: gasPrice });
           await tx1.wait();
         }
         if (check2) {
-          const tx2 = await contract.setDepositAmount(Deposit);
+          const tx2 = await contract.setDepositAmount(Deposit, {
+            gasPrice: gasPrice,
+          });
           await tx2.wait();
         }
         if (check3) {
-          const tx3 = await contract.setMaximumRental(maxDurationInSeconds);
+          const tx3 = await contract.setMaximumRental(maxDurationInSeconds, {
+            gasPrice: gasPrice,
+          });
           await tx3.wait();
         }
 
@@ -201,7 +217,7 @@ const MyContract = ({
     try {
       const decimals = await w2Rcontract.decimals();
       const amountWei = ethers.utils.parseUnits(amount, decimals);
-      const tx = await contract.depositW2R(amountWei);
+      const tx = await contract.depositW2R(amountWei, { gasPrice: gasPrice });
       await tx.wait();
       contract.once("W2Rdeposited", (owner, amount, date, contract) => {
         console.log("W2Rdeposited", owner, amount, date, contract);
@@ -254,7 +270,9 @@ const MyContract = ({
     try {
       const decimals = await w2Rcontract.decimals();
       const amountWei = ethers.utils.parseUnits(amount, decimals);
-      const tx = await contract.withdrawFunds(amountWei);
+      const tx = await contract.withdrawFunds(amountWei, {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       getW2Rbalance();
       getContractW2Rbalance();
@@ -277,7 +295,9 @@ const MyContract = ({
     try {
       const decimals = await w2Rcontract.decimals();
       const amountWei = ethers.utils.parseUnits(amount, decimals);
-      const tx = await w2Rcontract.approve(contractAddress, amountWei);
+      const tx = await w2Rcontract.approve(contractAddress, amountWei, {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       getAllowance();
       w2Rcontract.once("Approval", (owner, spender, amount) => {
@@ -305,7 +325,7 @@ const MyContract = ({
     setLoaderContract(true);
     try {
       const decimals = await w2Rcontract.decimals();
-      const tx = await contract.claimRewards();
+      const tx = await contract.claimRewards({ gasPrice: gasPrice });
       await tx.wait();
       contract.once("RewardClaimed", (owner, date, amount, contract) => {
         console.log("RewardClaimed", owner, date, amount, contract);
@@ -340,7 +360,10 @@ const MyContract = ({
 
   useEffect(() => {
     getAllowance();
-
+    document.addEventListener("click", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("click", handleClickOutside, true);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -361,7 +384,7 @@ const MyContract = ({
         )}
 
         <hr />
-        <p>
+        <div className="fs-5">
           Votre contrat:{" "}
           <span style={{ color: "green", wordBreak: "break-all" }}>
             {contractAddress}
@@ -404,7 +427,7 @@ const MyContract = ({
               </div>
             </>
           )}
-        </p>
+        </div>
         {activated && (
           <>
             <hr />
@@ -530,8 +553,22 @@ const MyContract = ({
               </>
             )}
             <br />
-            <p style={{ color: "green", wordBreak: "break-all" }}>
-              Contrat du W2R: {w2rAddress}{" "}
+            <p
+              style={{
+                color: "skyblue",
+                wordBreak: "break-all",
+                marginTop: "10px",
+              }}
+            >
+              Contrat du W2R:{" "}
+              <span
+                style={{ cursor: "pointer", color: "green" }}
+                onMouseOver={() => setQrW2R(true)}
+                onMouseOut={() => setQrW2R(false)}
+                onClick={() => setQrW2R(!QrW2R)}
+              >
+                {w2rAddress}
+              </span>{" "}
               <span onClick={handleCopy} style={{ cursor: "pointer" }}>
                 💾
               </span>
@@ -673,6 +710,13 @@ const MyContract = ({
             avant la date de fin de celle-ci + 2 jours, par mesure de sécurité.
           </p>
         </>
+      )}
+      {w2rAddress && QrW2R && (
+        <div className="qr-overlay" ref={W2Rref}>
+          <div className="qr-center">
+            <QRCode value={QrW2R && w2rAddress} />
+          </div>
+        </div>
       )}
     </div>
   );

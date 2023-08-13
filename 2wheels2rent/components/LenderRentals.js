@@ -5,7 +5,7 @@ import fr from "date-fns/locale/fr";
 import Camera from "./Camera";
 import Loader from "./Loader";
 
-const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
+const LenderRentals = ({ setLenderRentals, contract, showToast, gasPrice }) => {
   const [rental, setRental] = useState({});
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
     if (rental.cantCancel) return;
     setLoading(true);
     try {
-      const tx = await contract.cancelLending();
+      const tx = await contract.cancelLending({ gasPrice: gasPrice });
       await tx.wait();
       contract.once(
         "RentingCancelled",
@@ -93,7 +93,9 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
     }
     setLoading(true);
     try {
-      const tx = await contract.confirmBikeTaken(qrData);
+      const tx = await contract.confirmBikeTaken(qrData, {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       contract.once("BikeTaken", (renter, date, lender) => {
         console.log("BikeTaken", renter, date, lender);
@@ -182,7 +184,9 @@ const LenderRentals = ({ setLenderRentals, contract, showToast }) => {
     }
     setLoading(true);
     try {
-      const tx = await contract.confirmBikeReturned(qrData);
+      const tx = await contract.confirmBikeReturned(qrData, {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       contract.once(
         "BikeReturned",

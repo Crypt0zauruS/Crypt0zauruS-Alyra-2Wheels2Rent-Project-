@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useCallback } from "react";
+import { useEffect, useReducer, useCallback, useState } from "react";
 import { ethers } from "ethers";
 import Web3Modal from "web3modal";
 import { EthereumProvider } from "@walletconnect/ethereum-provider";
@@ -29,11 +29,13 @@ if (typeof window !== "undefined") {
           // Get the project ID from https://cloud.walletconnect.com/
           projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
           chains: [80001],
+          relayUrl: "wss://relay.walletconnect.com",
           methods: [
             "eth_sendTransaction",
             "eth_signTransaction",
             "personal_sign",
-            "wallet_switchEthereumChain",
+            "eth_signTypedData",
+            "eth_sign",
           ],
         },
 
@@ -43,6 +45,7 @@ if (typeof window !== "undefined") {
             projectId: options.projectId,
             chains: options.chains,
             showQrModal: true,
+            relayUrl: options.relayUrl,
           });
           await provider.enable();
           return provider;
@@ -55,7 +58,25 @@ if (typeof window !== "undefined") {
 export const useWeb3 = (): Web3ProviderState => {
   const [state, dispatch] = useReducer(web3Reducer, web3InitialState);
   const { provider, web3Provider, address, network, balance } = state;
+  const [gasPrice, setGasPrice] = useState<number | null>(null);
   // const router = useRouter();
+
+  const fetchGasPrice = useCallback(async () => {
+    if (web3Provider) {
+      try {
+        const rawPrice = await web3Provider.getGasPrice();
+        const price = Number(ethers.utils.formatUnits(rawPrice, "wei"));
+        // polygon mumbai minimum gas price must be 30 gwei to avoid Transaction underpriced error
+        setGasPrice(
+          network?.chainId === 80001 && price < 30000000000
+            ? 30000000000
+            : price
+        );
+      } catch (error) {
+        console.error("Error fetching gas price:", error);
+      }
+    }
+  }, [web3Provider]);
 
   const connect = useCallback(async (): Promise<void> => {
     if (web3Modal) {
@@ -102,6 +123,13 @@ export const useWeb3 = (): Web3ProviderState => {
     }
   }, [provider]);
 
+  useEffect(() => {
+    fetchGasPrice();
+    const interval = setInterval(fetchGasPrice, 30000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [web3Provider, fetchGasPrice]);
+
   // Auto connect to the cached provider
   useEffect(() => {
     // check for network mumbai or localhost
@@ -143,6 +171,8 @@ export const useWeb3 = (): Web3ProviderState => {
         disconnect();
       };
 
+      //provider.on("display_uri", (uri: any) => console.log(">>>>", uri));
+      //console.log(">>>>", provider);
       provider.on("accountsChanged", handleAccountsChanged);
       provider.on("chainChanged", handleChainChanged);
       provider.on("disconnect", handleDisconnect);
@@ -166,5 +196,6 @@ export const useWeb3 = (): Web3ProviderState => {
     connect,
     disconnect,
     balance,
+    gasPrice,
   } as Web3ProviderState;
 };

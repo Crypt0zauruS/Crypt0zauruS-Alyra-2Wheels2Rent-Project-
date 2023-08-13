@@ -9,6 +9,7 @@ export type Web3ProviderState = {
   connect: (() => Promise<void>) | null;
   disconnect: (() => Promise<void>) | null;
   balance: ethers.BigNumber | null | undefined;
+  gasPrice: ethers.BigNumber | null | undefined;
 };
 
 export const web3InitialState: Web3ProviderState = {
@@ -19,6 +20,7 @@ export const web3InitialState: Web3ProviderState = {
   connect: null,
   disconnect: null,
   balance: null,
+  gasPrice: null,
 };
 
 export type Web3Action =

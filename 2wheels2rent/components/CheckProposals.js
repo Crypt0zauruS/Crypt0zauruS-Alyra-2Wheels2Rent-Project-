@@ -12,6 +12,7 @@ const CheckProposals = ({
   userCoordinates,
   web3Provider,
   bikeRentAbi,
+  gasPrice,
 }) => {
   const [proposals, setProposals] = useState([]);
   const [proposalsToDelete, setProposalsToDelete] = useState([]);
@@ -140,7 +141,8 @@ const CheckProposals = ({
         renter,
         meetingHourTimestamp,
         userCoordinates[0].toString(),
-        userCoordinates[1].toString()
+        userCoordinates[1].toString(),
+        {gasPrice: gasPrice}
       );
       await tx.wait();
       contract?.once(
@@ -177,7 +179,7 @@ const CheckProposals = ({
     }
     setLoading(true);
     try {
-      const tx = await contract.cancelProposal(renter);
+      const tx = await contract.cancelProposal(renter,{gasPrice: gasPrice});
       await tx.wait();
       contract?.once("ProposalCancelled", (renter, date, lender, index) => {
         console.log(renter, date, lender, index);

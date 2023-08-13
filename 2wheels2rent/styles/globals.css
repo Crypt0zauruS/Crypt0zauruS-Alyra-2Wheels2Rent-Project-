@@ -729,6 +729,26 @@ iframe {
   box-shadow: #08b29c 0px 0px 10px 10px;
 }
 
+.qr-overlay {
+  position: fixed;
+  width: 200px;
+  height: 200px;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 0 6px 6px rgba(58, 171, 227, 0.9);
+  z-index: 2; /* s'assurer qu'il apparaît au-dessus d'autres éléments */
+}
+
+.qr-center {
+  position: relative;
+  top: 50%;
+  left: 50%;
+  transform: translate(-33%, -50%);
+}
+
 /* LENDER & RENTER  SUBSCRIPTION COMPONENT */
 
 .bike-rental-form-container {

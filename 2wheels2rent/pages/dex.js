@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useReducer } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { ethers, Contract, utils } from "ethers";
 import { useWeb3Context } from "../context/";
 import BigNumber from "bignumber.js";
@@ -17,9 +17,10 @@ import Image from "next/image";
 import W2Rpicture from "../private/W2R.png";
 import W2Rmini from "../private/W2Rmini.png";
 import LPmini from "../private/LPmini.png";
+import QRCode from "qrcode.react";
 
 const Dex = () => {
-  const { web3Provider, address, network, provider, disconnect } =
+  const { web3Provider, address, network, provider, disconnect, gasPrice } =
     useWeb3Context();
   const addToken = useAddTokenToMetaMask();
   const showToast = (message, type = false) => {
@@ -68,6 +69,10 @@ const Dex = () => {
   const [LPToken, setLPToken] = useState({});
   const [stakingAddress, setStakingAddress] = useState("");
   const [isStaking, setIsStaking] = useState(false);
+  const [QrW2R, setQrW2R] = useState(false);
+  const [QrLP, setQrLP] = useState(false);
+  const W2Rref = useRef(null);
+  const LPref = useRef(null);
   // testing purpose
   const [testAmount, setTestAmount] = useState(0);
 
@@ -88,6 +93,15 @@ const Dex = () => {
     setSwapDirection(
       swapDirection === "MaticToW2R" ? "W2RToMatic" : "MaticToW2R"
     );
+  };
+
+  const handleClickOutside = (event) => {
+    if (W2Rref.current && !W2Rref.current.contains(event.target)) {
+      setQrW2R(false);
+    }
+    if (LPref.current && !LPref.current.contains(event.target)) {
+      setQrLP(false);
+    }
   };
 
   const hasTooManyDecimals = (amount) => {
@@ -127,7 +141,7 @@ const Dex = () => {
         18
       );
       const tx = await dexContract.swapW2RForMatic(amountToSwap.toString(), {
-        gasLimit: 300000,
+        gasPrice: gasPrice,
       });
       await tx.wait();
       fetchBalances();
@@ -175,7 +189,7 @@ const Dex = () => {
       const amountToSwap = ethers.utils.parseEther(swapMaticAmount.toString());
       const tx = await dexContract.swapMaticForW2R({
         value: amountToSwap,
-        gasLimit: 300000,
+        gasPrice: gasPrice,
       });
       await tx.wait();
       fetchBalances();
@@ -246,7 +260,7 @@ const Dex = () => {
       const w2r = ethers.utils.parseUnits(w2rAmount.toString(), 18);
       const tx = await dexContract.addLiquidity(w2r, {
         value: matic,
-        gasLimit: 300000,
+        gasPrice: gasPrice,
       });
       await tx.wait();
       fetchBalances();
@@ -315,7 +329,7 @@ const Dex = () => {
         18
       );
       const tx = await dexContract.removeLiquidity(lpTokenAmount, {
-        gasLimit: 300000,
+        gasPrice: gasPrice,
       });
       await tx.wait();
       fetchBalances();
@@ -376,7 +390,7 @@ const Dex = () => {
         lpTokenAmountToStake.toString(),
         18
       );
-      const tx = await dexContract.farm(lpTokenAmount, { gasLimit: 300000 });
+      const tx = await dexContract.farm(lpTokenAmount, { gasPrice: gasPrice });
       await tx.wait();
       fetchBalances();
       dexContract.once("Farm", (user, lpAmount, date) => {
@@ -408,7 +422,7 @@ const Dex = () => {
     }
     setLoading(true);
     try {
-      const tx = await dexContract.harvest({ gasLimit: 300000 });
+      const tx = await dexContract.harvest({ gasPrice: gasPrice });
       await tx.wait();
       fetchBalances();
       dexContract.once("Harvest", (user, rewards, date) => {
@@ -439,7 +453,7 @@ const Dex = () => {
     }
     setLoading(true);
     try {
-      const tx = await dexContract.exitFarm({ gasLimit: 300000 });
+      const tx = await dexContract.exitFarm({ gasPrice: gasPrice });
       await tx.wait();
       fetchBalances();
       dexContract.once("ExitFarm", (user, lpAmount, date) => {
@@ -462,18 +476,26 @@ const Dex = () => {
     if (hasTooManyDecimals(amount)) {
       return;
     }
+    alert(
+      "Il y aura 2 étapes à confirmer: l'approbation de dépense de vos tokens, puis l'opération en elle-même."
+    );
     try {
       const decimals = await W2Rcontract.decimals();
       const amountWei = ethers.utils.parseUnits(amount, decimals);
       const tx = isDex
-        ? await W2Rcontract.approve(dexAddress, amountWei)
-        : await W2Rcontract.approve(stakingAddress, amountWei);
+        ? await W2Rcontract.approve(dexAddress, amountWei, {
+            gasPrice: gasPrice,
+          })
+        : await W2Rcontract.approve(stakingAddress, amountWei, {
+            gasPrice: gasPrice,
+          });
       await tx.wait();
       W2Rcontract.once("Approval", (owner, spender, amount) => {
         console.log("Approval", owner, spender, amount);
       });
     } catch (err) {
       console.log(err);
+      alert("L'approbation n'a pas abouti. Veuillez réessayer.");
     }
   };
 
@@ -484,7 +506,9 @@ const Dex = () => {
     try {
       const decimals = await pairTokenContract.decimals();
       const amountWei = ethers.utils.parseUnits(amount, decimals);
-      const tx = await pairTokenContract.approve(dexAddress, amountWei);
+      const tx = await pairTokenContract.approve(dexAddress, amountWei, {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       pairTokenContract.once("Approval", (owner, spender, amount) => {
         console.log("Approval", owner, spender, amount);
@@ -659,6 +683,14 @@ const Dex = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [network]);
 
+  useEffect(() => {
+    document.addEventListener("click", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("click", handleClickOutside, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const claimTokens = async () => {
     if (!validateConditions()) return;
     if (network?.chainId !== 80001)
@@ -681,7 +713,9 @@ const Dex = () => {
       }
       // Hash the IP address
       const ipHash = utils.keccak256(utils.toUtf8Bytes(ip));
-      const tx = await dexContract.distributeTestW2R(ipHash);
+      const tx = await dexContract.distributeTestW2R(ipHash, {
+        gasPrice: gasPrice,
+      });
       await tx.wait();
       await fetchBalances();
       showToast("Tokens récupérés !");
@@ -899,6 +933,12 @@ const Dex = () => {
                       l&apos;utiliser sur Mumbai, ne pouvant pas apporter la
                       liquidité nécessaire en Matic de test (nous n&apos;avons
                       droit qu&apos;à une fraction par jour😅).
+                      <br />
+                      <br />
+                      <span style={{ color: "green" }}>
+                        Le staking est par contre pleinement fonctionnel, y
+                        compris avec vos W2R de test !
+                      </span>
                       <br />
                       Pour l&apos;instant, vous pouvez récupérer des tokens W2R
                       de test ({testAmount} par jour) pour utiliser
@@ -1335,7 +1375,13 @@ const Dex = () => {
                   style={{ marginTop: "30px", wordBreak: "break-all" }}
                   className="contracts-copies"
                 >
-                  <h2 className="text-center fs-6">
+                  <h2
+                    className="text-center fs-6"
+                    onMouseOver={() => setQrW2R(true)}
+                    onMouseOut={() => setQrW2R(false)}
+                    onClick={() => setQrW2R(!QrW2R)}
+                    style={{ cursor: "pointer" }}
+                  >
                     Contrat du W2R: {W2Raddress}{" "}
                     <span
                       onClick={() => handleCopy(W2Raddress)}
@@ -1344,7 +1390,14 @@ const Dex = () => {
                       💾
                     </span>
                   </h2>
-                  <h2 className="text-center fs-6">
+                  <br />
+                  <h2
+                    className="text-center fs-6"
+                    onMouseOver={() => setQrLP(true)}
+                    onMouseOut={() => setQrLP(false)}
+                    onClick={() => setQrLP(!QrLP)}
+                    style={{ cursor: "pointer" }}
+                  >
                     Contrat du Matic-W2R LP Token: {pairTokenAddress}{" "}
                     <span
                       onClick={() => handleCopy(pairTokenAddress)}
@@ -1371,6 +1424,7 @@ const Dex = () => {
                 setStakingAddress={setStakingAddress}
                 hasTooManyDecimals={hasTooManyDecimals}
                 showToast={showToast}
+                gasPrice={gasPrice}
               />
             </>
           )
@@ -1405,6 +1459,21 @@ const Dex = () => {
       </div>
       <ToastContainer />
       <br />
+      {W2Raddress &&
+        pairTokenAddress &&
+        (QrW2R ? (
+          <div className="qr-overlay" ref={W2Rref}>
+            <div className="qr-center">
+              <QRCode value={W2Raddress} />
+            </div>
+          </div>
+        ) : QrLP ? (
+          <div className="qr-overlay" ref={LPref}>
+            <div className="qr-center">
+              <QRCode value={pairTokenAddress} />
+            </div>
+          </div>
+        ) : null)}
       <Footer />
     </div>
   );
