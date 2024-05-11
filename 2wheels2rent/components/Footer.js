@@ -21,7 +21,7 @@ const Footer = ({ show }) => {
     <div>
       <footer>
         <div style={{ color: "black" }}>
-          &copy; 2Wheels2Rent - 2023 -{" "}
+          &copy; 2Wheels2Rent - {new Date().getFullYear()} -{" "}
           <span
             onClick={() => {
               setModal(!modal);
@@ -49,7 +49,7 @@ const Footer = ({ show }) => {
               href="https://github.com/Crypt0zauruS/"
             >
               <span style={{ color: "orangered", cursor: "pointer" }}>
-                &copy; Crypt0zauruS - 2023{" "}
+                &copy; Crypt0zauruS - {new Date().getFullYear()}{" "}
               </span>
             </a>
             <br />

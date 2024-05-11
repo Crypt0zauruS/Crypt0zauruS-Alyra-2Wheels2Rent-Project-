@@ -405,11 +405,6 @@ export default function Home() {
           ],
           site_name: "2Wheels2Rent",
         }}
-        twitter={{
-          handle: "@CryptosaurusRe4",
-          site: "@CryptosaurusRe4",
-          cardType: "summary_large_image",
-        }}
       />
       <div className="container-fluid">
         {!address && (
