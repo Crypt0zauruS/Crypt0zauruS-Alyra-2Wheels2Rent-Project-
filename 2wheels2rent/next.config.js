@@ -41,9 +41,9 @@ const nextConfig = {
       fallback: [{ source: "/api/:path*", destination: "/404" }],
     };
   },
-  //async headers() {
-  //  return [{ source: "/(.*)", headers: securityHeaders }];
-  //},
+  async headers() {
+    return [{ source: "/(.*)", headers: securityHeaders }];
+  },
 };
 
 module.exports = nextConfig;

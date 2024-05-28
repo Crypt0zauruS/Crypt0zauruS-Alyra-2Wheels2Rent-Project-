@@ -55,6 +55,11 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lenderNFTAddress, renterNFTAddress, NFTId]);
 
+  const loaderProp = ({ src, width, quality }) => {
+    console.log(src, width, quality);
+    return `${src}?w=${width}&q=${quality || 75}`;
+  };
+
   return (
     <div className="modalNFT">
       <div className="modalNFTContent">
@@ -76,6 +81,8 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
               : goldenBike
           }
           alt="NFT Image"
+          quality={75}
+          loader={loaderProp}
         />
         <h2>{metadata.name ? metadata?.name : "loading..."}</h2>
         <p>
