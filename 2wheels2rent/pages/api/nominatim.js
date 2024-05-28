@@ -2,6 +2,7 @@ import axios from "axios";
 
 export default async function handler(req, res) {
   const { type, ...otherQueryParams } = req.query;
+
   if (type !== "search" && type !== "reverse") {
     res
       .status(400)
@@ -10,12 +11,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await axios.get(
-      `https://nominatim.openstreetmap.org/${type}`,
-      {
-        params: otherQueryParams,
-      }
-    );
+    const params = new URLSearchParams({
+      ...otherQueryParams,
+      format: "json",
+    });
+
+    const url = `https://nominatim.openstreetmap.org/${type}?${params.toString()}`;
+
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent": "YourAppName",
+      },
+    });
 
     res.status(200).json(response.data);
   } catch (error) {

@@ -93,14 +93,14 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
               ))
             : "loading..."}
         </ul>
-        {network.chainId === 80001 && (
+        {network.chainId === 80002 && (
           <h2 className="fs-5" style={{ color: "orange" }}>
             Contrat du NFT :{" "}
             <a
               style={{ color: "cyan", wordBreak: "break-all" }}
               rel="noreferrer noopener"
               target="_blank"
-              href={`https://testnets.opensea.io/assets/mumbai/${
+              href={`https://testnets.opensea.io/assets/amoy/${
                 role === "loueur"
                   ? lenderNFTAddress
                   : role === "emprunteur"

@@ -150,13 +150,13 @@ export default function Home() {
               selectedBrand.value,
               model,
               serialNumber,
-              registrationNumber,
-              { gasPrice: gasPrice }
+              registrationNumber
+              //{ gasPrice: gasPrice }
             )
           : await whitelistContract.setRenterInfoAndMint(
               pseudo,
-              selectedType.value,
-              { gasPrice: gasPrice }
+              selectedType.value
+              //{ gasPrice: gasPrice }
             );
       whitelistContract.once(eventToWatch, (address, NFTId, event) => {
         console.log("event", event, "address", address, "NFTId", NFTId);
@@ -367,9 +367,9 @@ export default function Home() {
 
   useEffect(() => {
     if (address && network) {
-      if (network.chainId !== 1337 && network.chainId !== 80001) {
+      if (network.chainId !== 1337 && network.chainId !== 80002) {
         alert(
-          "Veuillez vous connecter au réseau de test Matic Mumbai ou au réseau de développement local !"
+          "Veuillez vous connecter au réseau de test Matic Amoy ou au réseau de développement local !"
         );
         disconnect();
       }
@@ -414,8 +414,8 @@ export default function Home() {
             entre particuliers.
             <br />
             Bien qu&apos;elle soit encore en développement sur la blockchain de
-            test Mumbai, vous pouvez déjà vous inscrire et profiter de toutes
-            les fonctionnalités de l&apos;application.🚴🏽‍♀️🚀
+            test Amoy, vous pouvez déjà vous inscrire et profiter de toutes les
+            fonctionnalités de l&apos;application.🚴🏽‍♀️🚀
             <hr />
             Pour le moment, en cas de mise à jour des smart contracts, vous
             devrez vous réinscrire. Bien sûr, vous pouvez récupérer gratuitement
@@ -446,7 +446,7 @@ export default function Home() {
             </a>
             🤓
             <br />
-            Veuillez connecter votre wallet sur Polygon Mumbai pour accéder à
+            Veuillez connecter votre wallet sur Polygon Amoy pour accéder à
             l&apos;application ! 👆🏽
           </div>
         )}

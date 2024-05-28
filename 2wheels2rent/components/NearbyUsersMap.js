@@ -354,7 +354,7 @@ const NearbyUsersMap = ({
                       {user.role === "loueur" && (
                         <div>
                           <button
-                          type="button"
+                            type="button"
                             onClick={() => {
                               setMakeProposal(true);
                               setProposalAddress(user.ethereumAddress);
@@ -411,7 +411,7 @@ const NearbyUsersMap = ({
       )}
       <div>
         <button
-        type="button"
+          type="button"
           className="btn btn-danger m-2 change-location"
           onClick={() => setUpdateGPS(!updateGPS)}
         >
@@ -419,10 +419,19 @@ const NearbyUsersMap = ({
         </button>
         {updateGPS && (
           <>
-            <button className="map-button" onClick={locateMe} disabled={loader} type="button">
+            <button
+              className="map-button"
+              onClick={locateMe}
+              disabled={loader}
+              type="button"
+            >
               Me localiser
             </button>
-            <button className="btn btn-danger m-2" onClick={updateRDV} type="button">
+            <button
+              className="btn btn-danger m-2"
+              onClick={updateRDV}
+              type="button"
+            >
               Mettre à jour
             </button>
           </>

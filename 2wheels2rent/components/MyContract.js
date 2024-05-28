@@ -36,6 +36,7 @@ const MyContract = ({
   const [rewards, setRewards] = useState(0);
   const [action, setAction] = useState("deposit");
   const [QrW2R, setQrW2R] = useState(false);
+
   const W2Rref = useRef(null);
 
   const handleClickOutside = (event) => {
@@ -711,6 +712,7 @@ const MyContract = ({
           </p>
         </>
       )}
+
       {w2rAddress && QrW2R && (
         <div className="qr-overlay" ref={W2Rref}>
           <div className="qr-center">

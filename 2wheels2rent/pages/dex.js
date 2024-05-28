@@ -673,9 +673,9 @@ const Dex = () => {
       });
     }
     if (network) {
-      if (network?.chainId !== 80001 && network?.chainId !== 1337) {
+      if (network?.chainId !== 80002 && network?.chainId !== 1337) {
         alert(
-          "Merci de vous connecter au réseau Polygon Mumbai ou au réseau de test local"
+          "Merci de vous connecter au réseau Polygon Amoy ou au réseau de test local"
         );
         disconnect();
       }
@@ -693,8 +693,8 @@ const Dex = () => {
 
   const claimTokens = async () => {
     if (!validateConditions()) return;
-    if (network?.chainId !== 80001)
-      showToast("Merci de vous connecter au réseau Polygon Mumbai", true);
+    if (network?.chainId !== 80002)
+      showToast("Merci de vous connecter au réseau Polygon Amoy", true);
     try {
       setLoading(true);
       const response = await fetch("https://api.ipify.org?format=json");
@@ -909,7 +909,7 @@ const Dex = () => {
           !isStaking ? (
             <>
               <div className="col-12">
-                {network?.chainId === 80001 && (
+                {network?.chainId === 80002 && (
                   <>
                     <hr />
                     <h2 className="text-center fs-6">
@@ -925,7 +925,7 @@ const Dex = () => {
                       <br />
                       Bien que le Dex soit pleinement fonctionnel testé en
                       réseau local, il n&apos;est pas encore possible de
-                      l&apos;utiliser sur Mumbai, ne pouvant pas apporter la
+                      l&apos;utiliser sur Amoy, ne pouvant pas apporter la
                       liquidité nécessaire en Matic de test (nous n&apos;avons
                       droit qu&apos;à une fraction par jour😅).
                       <br />
@@ -950,12 +950,12 @@ const Dex = () => {
                       N&apos;oubliez pas de récupérer vos faucets de test Matic
                       pour les frais de gas sur
                       <a
-                        href="https://mumbaifaucet.com/"
+                        href="https://faucet.polygon.technology/"
                         target="_blank"
                         rel="noreferrer noopener"
                       >
                         {" "}
-                        https://mumbaifaucet.com/
+                        https://faucet.polygon.technology/
                       </a>
                       <br />
                       <span
@@ -994,7 +994,7 @@ const Dex = () => {
                       garantie le contrôle et la sécurité de vos fonds
                     </h2>
                     {window?.ethereum &&
-                      network.chainId === 80001 &&
+                      network.chainId === 80002 &&
                       w2rToken &&
                       LPToken &&
                       provider && (
@@ -1427,14 +1427,14 @@ const Dex = () => {
           <>
             <hr />
             <h1 className="text-center fs-3">
-              Connectez-vous sur Polygon Mumbai pour réclamer gratuitement vos
-              W2R de test !{" "}
+              Connectez-vous sur Polygon Amoy pour réclamer gratuitement vos W2R
+              de test !{" "}
             </h1>
             <br />
             <h1 className="text-center fs-5">
               Bien que le Dex soit pleinement fonctionnel testé en réseau local,
-              il n&apos;est pas encore possible de l&apos;utiliser sur Mumbai.
-              En attendant, vous pouvez réclamer vos W2R de test en connectant
+              il n&apos;est pas encore possible de l&apos;utiliser sur Amoy. En
+              attendant, vous pouvez réclamer vos W2R de test en connectant
               votre wallet pour utiliser l&apos;application.
             </h1>
             <hr />

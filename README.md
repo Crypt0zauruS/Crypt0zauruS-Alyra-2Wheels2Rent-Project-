@@ -1,6 +1,6 @@
 # 2Wheels2Rent : Application de location de vélos décentralisée
 
-Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de vélos décentralisée utilisantla technologie blockchain, et plus particulièrement le réseau Polygon. Cette application utilise des smart contracts déployés sur le réseau de test **Polygon Mumbai** pour gérer les processus de location, de retour des vélos ainsi que la gestion de ses tokens W2R, le token de la plateforme.
+Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de vélos décentralisée utilisantla technologie blockchain, et plus particulièrement le réseau Polygon. Cette application utilise des smart contracts déployés sur le réseau de test **Polygon Amoy** pour gérer les processus de location, de retour des vélos ainsi que la gestion de ses tokens W2R, le token de la plateforme.
 
 ## Table des matières
 
@@ -13,6 +13,12 @@ Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de 
 - [Tests unitaires](#tests-unitaires)
 
 ## Mises à jour
+
+### 1.3.0
+
+#### 2023-05-21
+
+- Migration de l'application sur Polygon Amoy Testnet
 
 ### 1.2.0
 
@@ -39,7 +45,7 @@ Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de 
 - Le contenu des QR codes est sauvegardé dans les locations des contrats BikeShare et BikeRent
 - Ajout d'un délai de 2 jours après la fin d'une location pour se désinscrire de la plateforme
 - Ajout d'une fonction qui envoie la caution dans le vault en cas d'une désinscription pendant un litige
-- Ajout de la fonctionnalité dans le DEX qui permet de récupérer des W2R de test pour utiliser l'application sur Mumbai
+- Ajout de la fonctionnalité dans le DEX qui permet de récupérer des W2R de test pour utiliser l'application sur Amoy
 - Affichage des cours du Matic et du W2R dans le header, en USD et en EUR
 - Optimisation du code
 - Mise à jour des tests unitaires
@@ -73,14 +79,14 @@ Vous pouvez accéder à l'application déployée en suivant ce lien : [2Wheels2R
 1. Pour déployer les contrats sur Ganache, il suffit de lancer la commande
    `truffle migrate --network development` dans le dossier truffle.
 
-2. Pour déployer les contrats sur Mumbai, il faut d'abord renseigner votre clé privée et votre URL de votre node dédié à Polygon Mumbai, dans un fichier .env à la racine du dossier truffle. Ensuite, assurez-vous de posséder des faucet de MATIC sur votre compte.
+2. Pour déployer les contrats sur Amoy, il faut d'abord renseigner votre clé privée et votre URL de votre node dédié à Polygon Amoy, dans un fichier .env à la racine du dossier truffle. Ensuite, assurez-vous de posséder des faucet de MATIC sur votre compte.
    Enfin, il suffit de lancer la commande
 
-   `truffle migrate --network mumbai`
+   `truffle migrate --network amoy`
    dans le dossier truffle.
-   Vous constaterez des pauses dans le script de migration concernant le déploiement sur Mumbai. Les contrats et le nombre d'actions à réaliser étant assez conséquentes, ces pauses garantissent le bon déroulement du déploiement.
+   Vous constaterez des pauses dans le script de migration concernant le déploiement sur Amoy. Les contrats et le nombre d'actions à réaliser étant assez conséquentes, ces pauses garantissent le bon déroulement du déploiement.
 
-3. Vous trouverez dans le dossier truffle un fichier deployment-output.txt qui contient tout le log du déploiement qui a été effectué sur Mumbai.
+3. Vous trouverez dans le dossier truffle un fichier deployment-output.txt qui contient tout le log du déploiement qui a été effectué sur Amoy.
 
 4. Utilisation de l'optimizer.
    Pour le déploiement, j'ai utilisé l'optimizer de truffle avec les paramètres suivants:

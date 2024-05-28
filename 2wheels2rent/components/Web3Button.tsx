@@ -51,7 +51,7 @@ const ConnectButton = ({ connect }: ConnectProps) => {
           onClick={checkIfMetamaskConnected}
           className="polygon animate__animated animate__zoomIn btn btn-info gradient-button"
         >
-          Passer sur Matic Mumbai{" "}
+          Passer sur Matic Amoy{" "}
           <Image
             className="poly-image"
             src="/Deco/a1f438b853a1ff294b21bd7b31f8c5d6.webp"

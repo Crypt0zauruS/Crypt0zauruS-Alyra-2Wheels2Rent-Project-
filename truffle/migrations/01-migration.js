@@ -15,10 +15,11 @@ const lenderIPFS =
 const renterIPFS =
   "bafybeihc4a3whkac7bg3eyaagki3j3emhshtzjymtieltp33ybkmkxqzfq";
 // MATIC/USD price feeds
-const priceFeedMumbai = "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada";
+const priceFeedAmoy = "0x001382149eBa3441043c1c66972b4772963f5D43";
 //const priceFeedMainnet = "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0";
 const priceDecimals = 8; // Price feeds use 8 decimals when returning fiat values (ex: USD)
 const initialPrice = 120000000; // 1.20 USD with 8 decimals
+const delay = 25000; // change according to network congestion
 
 // pauses necessary to deploy in testnet without errors
 function sleep(ms) {
@@ -46,6 +47,8 @@ module.exports = async (deployer, network, accounts) => {
     });
     console.log("1,000,000 W2R tokens transferred to VaultW2R");
 
+    if (network === "amoy") await sleep(delay);
+
     // deploy LP token
     await deployer.deploy(MaticW2RPairToken);
     const MaticW2RPairTokenInstance = await MaticW2RPairToken.deployed();
@@ -54,7 +57,7 @@ module.exports = async (deployer, network, accounts) => {
       MaticW2RPairTokenInstance.address
     );
 
-    if (network === "mumbai") await sleep(5000);
+    if (network === "amoy") await sleep(delay);
 
     // Deploy MaticW2Rdex
     await deployer.deploy(
@@ -67,7 +70,7 @@ module.exports = async (deployer, network, accounts) => {
     const MaticW2RdexInstance = await MaticW2Rdex.deployed();
     console.log("MaticW2Rdex address: ", MaticW2RdexInstance.address);
 
-    if (network === "mumbai") await sleep(10000);
+    if (network === "amoy") await sleep(delay);
 
     // add DEX as authorized Minter and Burner in LP token
     await MaticW2RPairTokenInstance.addMinterAndBurner(
@@ -92,9 +95,11 @@ module.exports = async (deployer, network, accounts) => {
       console.log("MockPriceFeed address: ", MockPriceFeedInstance.address);
     }
 
-    if (network === "mumbai") {
-      priceFeed = priceFeedMumbai;
+    if (network === "amoy") {
+      priceFeed = priceFeedAmoy;
     }
+
+    if (network === "amoy") await sleep(delay);
 
     await deployer.deploy(
       W2RStaking,
@@ -112,6 +117,8 @@ module.exports = async (deployer, network, accounts) => {
     );
     console.log("Staking address set in VaultW2R contract");
 
+    if (network === "amoy") await sleep(delay);
+
     // Deploy TwoWheels2RentLender NFT contract
     await deployer.deploy(TwoWheels2RentLender);
     const TwoWheels2RentLenderInstance = await TwoWheels2RentLender.deployed();
@@ -128,7 +135,7 @@ module.exports = async (deployer, network, accounts) => {
       TwoWheels2RentRenterInstance.address
     );
 
-    if (network === "mumbai") await sleep(10000);
+    if (network === "amoy") await sleep(delay);
 
     // Deploy LenderWhitelist contract
     await deployer.deploy(
@@ -152,7 +159,7 @@ module.exports = async (deployer, network, accounts) => {
     const RenterWhitelistInstance = await RenterWhitelist.deployed();
     console.log("RenterWhitelist address: ", RenterWhitelistInstance.address);
 
-    if (network === "mumbai") await sleep(5000);
+    if (network === "amoy") await sleep(delay);
     // Set addresses of each other in contracts
     await LenderWhitelistInstance.setRenterWhitelistAddress(
       RenterWhitelistInstance.address
@@ -163,6 +170,8 @@ module.exports = async (deployer, network, accounts) => {
     );
     console.log("LenderWhitelist address set in RenterWhitelist contract");
 
+    if (network === "amoy") await sleep(delay);
+
     // Set whitelist contract addresses  in NFT contracts
     await TwoWheels2RentLenderInstance.setLenderWhitelistContract(
       LenderWhitelistInstance.address
@@ -171,7 +180,7 @@ module.exports = async (deployer, network, accounts) => {
       "LenderWhitelist address set in TwoWheels2RentLender NFT contract"
     );
 
-    if (network === "mumbai") await sleep(10000);
+    if (network === "amoy") await sleep(delay);
     // Set IPFS hash in NFT contracts
     await TwoWheels2RentLenderInstance.setIpfsHash(lenderIPFS);
     console.log("IPFS hash set in TwoWheels2RentLender NFT contract");
@@ -183,10 +192,12 @@ module.exports = async (deployer, network, accounts) => {
       "RenterWhitelist address set in TwoWheels2RentRenter NFT contract"
     );
 
+    if (network === "amoy") await sleep(delay);
+
     await TwoWheels2RentRenterInstance.setIpfsHash(renterIPFS);
     console.log("IPFS hash set in TwoWheels2RentRenter NFT contract");
 
-    if (network === "mumbai") await sleep(5000);
+    if (network === "amoy") await sleep(delay);
     // set whitelist contracts addresses in VaultW2R as approvers
     await VaultW2RInstance.setWhitelistLenders(LenderWhitelistInstance.address);
     console.log("LenderWhitelist address set in VaultW2R contract");

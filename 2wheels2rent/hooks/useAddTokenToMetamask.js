@@ -21,7 +21,7 @@ const useAddTokenToMetaMask = () => {
     async (token) => {
       const { tokenAddress, tokenSymbol, tokenDecimals, tokenImage } = token;
 
-      if (window?.ethereum && network?.chainId === 80001) {
+      if (window?.ethereum && network?.chainId === 80002) {
         try {
           await web3Provider.send("wallet_watchAsset", {
             type: "ERC20",

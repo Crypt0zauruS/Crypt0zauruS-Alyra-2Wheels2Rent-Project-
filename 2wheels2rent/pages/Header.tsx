@@ -46,6 +46,10 @@ export default function Header() {
     );
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
   useEffect(() => {
     window.addEventListener("scroll", handleScroll, { passive: true } as any);
     return () =>
@@ -93,7 +97,11 @@ export default function Header() {
                       ) : (
                         <h2>
                           compte:{" "}
-                          <span style={{ color: "orange" }}>
+                          <span
+                            style={{ color: "orange", cursor: "pointer" }}
+                            onClick={() => copyToClipboard(address)}
+                            title="Cliquez pour copier l'adresse"
+                          >
                             {address.slice(0, 6) + "..." + address.slice(-4)}
                           </span>{" "}
                           - balance:{" "}

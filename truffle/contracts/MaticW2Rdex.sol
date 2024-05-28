@@ -66,11 +66,11 @@ contract MaticW2Rdex is Ownable, ReentrancyGuard {
     mapping(address => uint) public LPBalance;
     mapping(address => Farming) public farming;
 
-    // Mappings and uint for Tests on Mumbai
+    // Mappings and uint for Tests on Amoy
     mapping(address => uint) private lastDistributeTimestamp;
     mapping(bytes32 => uint) private lastIPDistributeTimestamp;
     uint public testAmount;
-    // End of Mappings and uint for Tests on Mumbai
+    // End of Mappings and uint for Tests on Amoy
 
     struct Farming {
         uint lastTime;
@@ -161,20 +161,20 @@ contract MaticW2Rdex is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Distribute 2000 W2R tokens to the caller as a tester once per day, only on Mumbai Testnet.
+     * @dev Distribute 2000 W2R tokens to the caller as a tester once per day, only on Amoy Testnet.
      * Owner can set testAmount to 0 to disable this function.
      * @param ipHash The keccak256 hash of the caller's IP address.
      */
     function distributeTestW2R(bytes32 ipHash) external {
         require(testAmount > 0, "Test amount must be greater than 0");
-        // Make sure this function is only callable on Mumbai Testnet
+        // Make sure this function is only callable on Amoy Testnet
         uint chainId;
         assembly {
             chainId := chainid()
         }
         require(
-            chainId == 80001,
-            "This function can only be used on the Mumbai Testnet"
+            chainId == 80002,
+            "This function can only be used on the Amoy Testnet"
         );
         uint currentTime = block.timestamp;
         // Check IP limit

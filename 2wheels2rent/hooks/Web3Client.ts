@@ -14,7 +14,7 @@ let web3Modal: Web3Modal | null;
 if (typeof window !== "undefined") {
   web3Modal = new Web3Modal({
     theme: "dark",
-    network: "80001",
+    network: "80002",
     cacheProvider: true,
     providerOptions: {
       // Other providers here
@@ -28,7 +28,7 @@ if (typeof window !== "undefined") {
         options: {
           // Get the project ID from https://cloud.walletconnect.com/
           projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
-          chains: [80001],
+          chains: [80002],
           relayUrl: "wss://relay.walletconnect.com",
           methods: [
             "eth_sendTransaction",
@@ -66,9 +66,9 @@ export const useWeb3 = (): Web3ProviderState => {
       try {
         const rawPrice = await web3Provider.getGasPrice();
         const price = Number(ethers.utils.formatUnits(rawPrice, "wei"));
-        // polygon mumbai minimum gas price must be 30 gwei to avoid Transaction underpriced error
+        // polygon amoy minimum gas price must be 30 gwei to avoid Transaction underpriced error
         setGasPrice(
-          network?.chainId === 80001 && price < 30000000000
+          network?.chainId === 80002 && price < 30000000000
             ? 30000000000
             : price
         );
@@ -132,8 +132,8 @@ export const useWeb3 = (): Web3ProviderState => {
 
   // Auto connect to the cached provider
   useEffect(() => {
-    // check for network mumbai or localhost
-    if (network?.chainId !== 80001 && network?.chainId !== 1337) {
+    // check for network amoy or localhost
+    if (network?.chainId !== 80002 && network?.chainId !== 1337) {
       disconnect();
       return;
     }

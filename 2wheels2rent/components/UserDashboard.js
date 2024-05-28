@@ -420,7 +420,7 @@ const UserDashboard = ({ props }) => {
                     {w2rUserBalance?.toFixed(2)}
                   </span>{" "}
                   {window?.ethereum &&
-                    network.chainId === 80001 &&
+                    network.chainId === 80002 &&
                     w2rToken && (
                       <button
                         type="button"

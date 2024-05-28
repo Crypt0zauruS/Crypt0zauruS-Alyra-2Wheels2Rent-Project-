@@ -21,7 +21,7 @@ export const checkIfPolygonInMetamask = async () => {
       const chainId = await window.ethereum.request({
         method: "eth_chainId",
       });
-      if (chainId !== "0x13881") {
+      if (chainId !== "0x13882") {
         switchPolygonInMetamask();
       }
     } catch (error) {
@@ -35,7 +35,7 @@ export const switchPolygonInMetamask = async () => {
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x13881" }],
+        params: [{ chainId: "0x13882" }],
       });
     } catch (error) {
       console.log(error);
@@ -59,15 +59,15 @@ export const addPolygonToMetamask = async () => {
         method: "wallet_addEthereumChain",
         params: [
           {
-            chainId: "0x13881",
-            chainName: "Matic Mumbai",
+            chainId: "0x13882",
+            chainName: "Matic Amoy",
             nativeCurrency: {
               name: "MATIC",
               symbol: "MATIC",
               decimals: 18,
             },
-            rpcUrls: ["https://rpc-mumbai.maticvigil.com/"],
-            blockExplorerUrls: ["https://mumbai.polygonscan.com/"],
+            rpcUrls: ["https://polygon-amoy.drpc.org/"],
+            blockExplorerUrls: ["https://amoy.polygonscan.com/"],
           },
         ],
       });

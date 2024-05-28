@@ -23,10 +23,10 @@ module.exports = {
       network_id: "*", // Any network (default: none)
     },
 
-    mumbai: {
+    amoy: {
       provider: () => new HDWalletProvider(PRIVATE, PROVIDER_URL),
-      // mumbai testnet
-      network_id: 80001,
+      // amoy testnet
+      network_id: 80002,
 
       //   confirmations: 2,    // # of confirmations to wait between deployments. (default: 0)
       //   timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
