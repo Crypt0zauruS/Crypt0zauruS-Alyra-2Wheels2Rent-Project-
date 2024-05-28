@@ -2,7 +2,7 @@ const ContentSecurityPolicy = `
   default-src 'self' vercel.live;
   script-src 'self' 'unsafe-eval' 'unsafe-inline' cdn.vercel-insights.com vercel.live;
   style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com;
-  img-src * blob: data: a.tile.openstreetmap.org b.tile.openstreetmap.org c.tile.openstreetmap.org ipfs.io;
+  img-src * blob: data: a.tile.openstreetmap.org b.tile.openstreetmap.org c.tile.openstreetmap.org ipfs.io cloudflare-ipfs.com i.seadn.io s.seadn.io;
   media-src 'none';
   connect-src * api.coingecko.com tile.openstreetmap.org nominatim.openstreetmap.org m.youtube.com verify.walletconnect.com explorer-api.walletconnect.com relay.walletconnect.com;
   font-src 'self';
@@ -34,7 +34,7 @@ const nextConfig = {
     defaultLocale: "fr",
   },
   images: {
-    domains: ["ipfs.io"],
+    domains: ["ipfs.io", "cloudflare-ipfs.com", "i.seadn.io", "s.seadn.io"],
   },
   async rewrites() {
     return {

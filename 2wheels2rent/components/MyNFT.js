@@ -55,11 +55,6 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lenderNFTAddress, renterNFTAddress, NFTId]);
 
-  const loaderProp = ({ src, width, quality }) => {
-    console.log(src, width, quality);
-    return `${src}?w=${width}&q=${quality || 75}`;
-  };
-
   return (
     <div className="modalNFT">
       <div className="modalNFTContent">
@@ -75,14 +70,17 @@ const MyNFT = ({ userInfos, setModalNFT, role }) => {
           width={500}
           height={500}
           src={
-            metadata.image
-              ? "https://ipfs.io/ipfs/" +
-                metadata?.image?.replace("ipfs://", "")
+            role === "loueur"
+              ? "https://i.seadn.io/s/raw/files/3d9289aab9986b9b3dfc08ef7f219cb8.png"
+              : role === "emprunteur"
+              ? "https://i.seadn.io/s/raw/files/0b9a8ef50f76f3d3a795f5f831b09b7a.png"
               : goldenBike
+            //metadata.image
+            //  ? "https://ipfs.io/ipfs/" +
+            //    metadata?.image?.replace("ipfs://", "")
+            //  : goldenBike
           }
           alt="NFT Image"
-          quality={75}
-          loader={loaderProp}
         />
         <h2>{metadata.name ? metadata?.name : "loading..."}</h2>
         <p>
