@@ -2,12 +2,11 @@ const ContentSecurityPolicy = `
   default-src 'self' vercel.live;
   script-src 'self' 'unsafe-eval' 'unsafe-inline' cdn.vercel-insights.com vercel.live;
   style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com;
-  img-src * blob: data: a.tile.openstreetmap.org b.tile.openstreetmap.org c.tile.openstreetmap.org;
+  img-src * blob: data: a.tile.openstreetmap.org b.tile.openstreetmap.org c.tile.openstreetmap.org ipfs.io;
   media-src 'none';
   connect-src * api.coingecko.com tile.openstreetmap.org nominatim.openstreetmap.org m.youtube.com verify.walletconnect.com explorer-api.walletconnect.com relay.walletconnect.com;
   font-src 'self';
   frame-src 'self' m.youtube.com verify.walletconnect.com explorer-api.walletconnect.com relay.walletconnect.com;
-
 `.replace(/\n/g, "");
 
 const securityHeaders = [
