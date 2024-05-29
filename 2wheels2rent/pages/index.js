@@ -18,6 +18,7 @@ import { Contract } from "ethers";
 import LenderWhitelist from "../contracts/LenderWhitelist.json";
 import RenterWhitelist from "../contracts/RenterWhitelist.json";
 import Footer from "../components/Footer";
+import Router from "next/router";
 
 const MapComponent = dynamic(() => import("../components/MapWithSearch"), {
   ssr: false,
@@ -371,7 +372,8 @@ export default function Home() {
         alert(
           "Veuillez vous connecter au réseau de test Matic Amoy ou au réseau de développement local !"
         );
-        disconnect();
+        // disconnect();
+        Router.reload();
       }
       setLenderWhitelistAddress(
         LenderWhitelist.networks[network.chainId]?.address

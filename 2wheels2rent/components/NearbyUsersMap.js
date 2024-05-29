@@ -54,6 +54,7 @@ const NearbyUsersMap = ({
   const [image, setImage] = useState(null);
   const [cropping, setCropping] = useState(false);
   const { address, network } = useWeb3Context();
+  const [isLoading, setIsLoading] = useState(true);
 
   const userIcon = new Icon({
     iconUrl: "/Deco/userMarker4508079mvjvhvhv5454.png",
@@ -101,11 +102,11 @@ const NearbyUsersMap = ({
     return null;
   };
 
-  const fetchPlaceName = async (latitude, longitude, callback) => {
+  const fetchPlaceName = async (latitude, longitude) => {
     try {
       const response = await axios.get(
         //`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
-        `/api/nominatim`,
+        "/api/nominatim",
         {
           params: {
             type: "reverse",
@@ -119,7 +120,7 @@ const NearbyUsersMap = ({
       );
 
       if (response.status === 200) {
-        callback && callback(response.data.display_name);
+        return response.data.display_name;
       } else {
         throw new Error("Erreur lors de la récupération du nom du lieu.");
       }
@@ -161,34 +162,35 @@ const NearbyUsersMap = ({
   };
 
   useEffect(() => {
-    if (!isMapInitialized) {
-      fetchPlaceName(
+    const fetchData = async () => {
+      const fetchedPlaceName = await fetchPlaceName(
         userCoordinates[0],
-        userCoordinates[1],
-        (fetchedPlaceName) => {
-          setPlaceName(fetchedPlaceName);
-        }
+        userCoordinates[1]
       );
+      setPlaceName(fetchedPlaceName);
+      setIsLoading(false);
+    };
+    if (!isMapInitialized) {
+      fetchData();
       setIsMapInitialized(true);
     }
   }, [isMapInitialized, userCoordinates]);
 
   useEffect(() => {
-    nearbyUsers.forEach((user, index) => {
-      if (!placeNames.hasOwnProperty(index)) {
-        fetchPlaceName(
-          user.coordinates.latitude,
-          user.coordinates.longitude,
-          (fetchedPlaceName) => {
-            setPlaceNames((prevPlaceNames) => ({
-              ...prevPlaceNames,
-              [index]: fetchedPlaceName,
-            }));
-          }
-        );
-      }
-    });
-  }, [nearbyUsers, placeNames]);
+    const fetchPlaceNames = async () => {
+      const names = await Promise.all(
+        nearbyUsers.map((user) =>
+          fetchPlaceName(user.coordinates.latitude, user.coordinates.longitude)
+        )
+      );
+      const newPlaceNames = names.reduce((acc, name, index) => {
+        acc[index] = name;
+        return acc;
+      }, {});
+      setPlaceNames(newPlaceNames);
+    };
+    fetchPlaceNames();
+  }, [nearbyUsers]);
 
   useEffect(() => {
     if (address && role === "loueur") {
@@ -199,215 +201,227 @@ const NearbyUsersMap = ({
 
   return (
     <div className="container-fluid">
-      {isMapInitialized && (
-        <>
-          <MapContainer
-            center={!updateGPS ? userCoordinates : coordinates}
-            zoom={13}
-            style={{ height: "600px", width: "100%" }}
-          >
-            <HandleMapClick setNewRDV={setNewRDV} />
-            <UpdateMap center={!updateGPS ? userCoordinates : coordinates} />
-            <TileLayer
-              attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {!updateGPS && (
-              <Marker
-                position={[userCoordinates[0], userCoordinates[1]]}
-                icon={userIcon}
-              >
-                <Popup>
-                  <div className="popup-user">
-                    <h2 className="fs-6">Ma préférence de RDV:</h2>
-                    <p
-                      className="text-justify-center"
-                      style={{ fontSize: "0.9rem" }}
-                    >
-                      {placeName
-                        ? placeName
-                        : fetchPlaceName(
-                            userCoordinates[0],
-                            userCoordinates[1]
-                          )}
-                    </p>
-                    {role === "loueur" && (
-                      <>
-                        {!loader ? (
-                          <Image
-                            src={imageSrc ? imageSrc : goldenBike}
-                            alt="photo du vélo"
-                            width={100}
-                            height={100}
-                          />
-                        ) : (
-                          <Loader />
-                        )}
-                        <label className="btn btn-info">
-                          Changer de photo
-                          <input
-                            type="file"
-                            name="cover"
-                            onChange={handleImageUpload}
-                            accept="img/*"
-                            style={{ display: "none" }}
-                            disabled={cropping || loader}
-                          />
-                        </label>
-                      </>
-                    )}
-                    <button
-                      className="m-2"
-                      onClick={() => setModalNFT(true)}
-                      type="button"
-                    >
-                      Mon NFT
-                    </button>
-                    <button
-                      className="m-2"
-                      onClick={() => setModalContract(true)}
-                      type="button"
-                    >
-                      Mon Contrat
-                    </button>{" "}
-                    {role === "loueur" ? (
-                      <>
-                        {activated && (
-                          <button
-                            className="m-2"
-                            onClick={() => setCheckProposals(true)}
-                            type="button"
-                          >
-                            Propositions Reçues
-                          </button>
-                        )}
-                      </>
-                    ) : role === "emprunteur" ? (
-                      <>
-                        {activated && (
-                          <button
-                            className="m-2"
-                            onClick={() => setCheckMyProposals(true)}
-                            type="button"
-                          >
-                            {" "}
-                            Propositions Envoyées
-                          </button>
-                        )}
-                      </>
-                    ) : null}
-                    {role === "loueur" ? (
-                      <>
-                        {activated && (
-                          <button
-                            className="m-2"
-                            onClick={() => setLenderRentals(true)}
-                          >
-                            Gérer mes locations
-                          </button>
-                        )}
-                      </>
-                    ) : role === "emprunteur" ? (
-                      <>
-                        {activated && (
-                          <button
-                            className="m-2"
-                            onClick={() => setRenterRentals(true)}
-                            type="button"
-                          >
-                            {" "}
-                            Gérer mes locations
-                          </button>
-                        )}
-                      </>
-                    ) : null}
-                  </div>
-                </Popup>
-              </Marker>
-            )}
-            {!updateGPS &&
-              nearbyUsers.map((user, index) => (
+      {isLoading ? (
+        <Loader />
+      ) : (
+        isMapInitialized && (
+          <>
+            <MapContainer
+              center={!updateGPS ? userCoordinates : coordinates}
+              zoom={13}
+              style={{ height: "600px", width: "100%" }}
+            >
+              <HandleMapClick setNewRDV={setNewRDV} />
+              <UpdateMap center={!updateGPS ? userCoordinates : coordinates} />
+              <TileLayer
+                attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {!updateGPS && (
                 <Marker
-                  key={index}
-                  position={[
-                    user.coordinates.latitude,
-                    user.coordinates.longitude,
-                  ]}
-                  icon={
-                    user.role === "loueur"
-                      ? lenderIcon
-                      : user.role === "emprunteur"
-                      ? renterIcon
-                      : null
-                  }
+                  position={[userCoordinates[0], userCoordinates[1]]}
+                  icon={userIcon}
                 >
                   <Popup>
                     <div className="popup-user">
-                      <h2 className="fs-5">{user.name}</h2>
-                      <h2 className="fs-6">Sa préférence de RDV:</h2>
+                      <h2 className="fs-6">Ma préférence de RDV:</h2>
                       <p
                         className="text-justify-center"
                         style={{ fontSize: "0.9rem" }}
                       >
-                        {placeNames[index] || "...loading"}
+                        {placeName}
                       </p>
-                      {user.role === "loueur" && (
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMakeProposal(true);
-                              setProposalAddress(user.ethereumAddress);
-                            }}
-                          >
-                            Faire une proposition
-                          </button>
-
-                          <Image
-                            src={user.image ? user.image : null}
-                            alt="photo du vélo"
-                            width={100}
-                            height={100}
-                          />
-                        </div>
+                      {role === "loueur" && (
+                        <>
+                          {!loader ? (
+                            <Image
+                              src={imageSrc ? imageSrc : goldenBike}
+                              alt="photo du vélo"
+                              width={100}
+                              height={100}
+                            />
+                          ) : (
+                            <Loader />
+                          )}
+                          <label className="btn btn-info">
+                            Changer de photo
+                            <input
+                              type="file"
+                              name="cover"
+                              onChange={handleImageUpload}
+                              accept="img/*"
+                              style={{ display: "none" }}
+                              disabled={cropping || loader}
+                            />
+                          </label>
+                        </>
                       )}
+                      <button
+                        className="m-2"
+                        onClick={() => setModalNFT(true)}
+                        type="button"
+                      >
+                        Mon NFT
+                      </button>
+                      <button
+                        className="m-2"
+                        onClick={() => setModalContract(true)}
+                        type="button"
+                      >
+                        Mon Contrat
+                      </button>{" "}
+                      {role === "loueur" ? (
+                        <>
+                          {activated && (
+                            <button
+                              className="m-2"
+                              onClick={() => setCheckProposals(true)}
+                              type="button"
+                            >
+                              Propositions Reçues
+                            </button>
+                          )}
+                        </>
+                      ) : role === "emprunteur" ? (
+                        <>
+                          {activated && (
+                            <button
+                              className="m-2"
+                              onClick={() => setCheckMyProposals(true)}
+                              type="button"
+                            >
+                              {" "}
+                              Propositions Envoyées
+                            </button>
+                          )}
+                        </>
+                      ) : null}
+                      {role === "loueur" ? (
+                        <>
+                          {activated && (
+                            <button
+                              className="m-2"
+                              onClick={() => setLenderRentals(true)}
+                            >
+                              Gérer mes locations
+                            </button>
+                          )}
+                        </>
+                      ) : role === "emprunteur" ? (
+                        <>
+                          {activated && (
+                            <button
+                              className="m-2"
+                              onClick={() => setRenterRentals(true)}
+                              type="button"
+                            >
+                              {" "}
+                              Gérer mes locations
+                            </button>
+                          )}
+                        </>
+                      ) : null}
                     </div>
                   </Popup>
                 </Marker>
-              ))}
-            {updateGPS && newRDV?.length === 2 && (
-              <Marker position={newRDV} icon={rdvIcon}>
-                <Popup>Mon nouvel emplacement de RDV</Popup>
-              </Marker>
+              )}
+              {!updateGPS &&
+                nearbyUsers.map((user, index) => (
+                  <Marker
+                    key={index}
+                    position={[
+                      user.coordinates.latitude,
+                      user.coordinates.longitude,
+                    ]}
+                    icon={
+                      user.role === "loueur"
+                        ? lenderIcon
+                        : user.role === "emprunteur"
+                        ? renterIcon
+                        : null
+                    }
+                  >
+                    <Popup>
+                      <div className="popup-user">
+                        <h2 className="fs-5">{user.name}</h2>
+                        <h2 className="fs-6">Sa préférence de RDV:</h2>
+                        <p
+                          className="text-justify-center"
+                          style={{ fontSize: "0.9rem" }}
+                        >
+                          {placeNames[index]}
+                        </p>
+                        {user.role === "loueur" && (
+                          <>
+                            {role === "emprunteur" ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMakeProposal(true);
+                                  setProposalAddress(user.ethereumAddress);
+                                }}
+                              >
+                                Faire une proposition
+                              </button>
+                            ) : (
+                              <p
+                                style={{
+                                  display: "inline",
+                                  fontSize: "0.8rem",
+                                  color: "red",
+                                }}
+                              >
+                                Pour emprunter ce vélo, veuillez vous inscrire
+                                en tant qu&apos;emprunteur avec un autre compte.
+                              </p>
+                            )}
+
+                            <Image
+                              src={user.image ? user.image : null}
+                              alt="photo du vélo"
+                              width={100}
+                              height={100}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              {updateGPS && newRDV?.length === 2 && (
+                <Marker position={newRDV} icon={rdvIcon}>
+                  <Popup>Mon nouvel emplacement de RDV</Popup>
+                </Marker>
+              )}
+              {updateGPS && (
+                <Marker position={coordinates} icon={userIcon}>
+                  <Popup>
+                    Ma Nouvelle Localisation :<br />
+                    Latitude : {coordinates[0]}
+                    <br />
+                    Longitude : {coordinates[1]}
+                  </Popup>
+                </Marker>
+              )}
+            </MapContainer>{" "}
+            {image && (
+              <div className="crop-container">
+                <ImageCropper
+                  props={{
+                    image,
+                    setImage,
+                    setLoader,
+                    loader,
+                    setCropping,
+                    showToast,
+                    checkUser,
+                    checkPhotoLender,
+                  }}
+                />
+              </div>
             )}
-            {updateGPS && (
-              <Marker position={coordinates} icon={userIcon}>
-                <Popup>
-                  Ma Nouvelle Localisation :<br />
-                  Latitude : {coordinates[0]}
-                  <br />
-                  Longitude : {coordinates[1]}
-                </Popup>
-              </Marker>
-            )}
-          </MapContainer>{" "}
-          {image && (
-            <div className="crop-container">
-              <ImageCropper
-                props={{
-                  image,
-                  setImage,
-                  setLoader,
-                  loader,
-                  setCropping,
-                  showToast,
-                  checkUser,
-                  checkPhotoLender,
-                }}
-              />
-            </div>
-          )}
-        </>
+          </>
+        )
       )}
       <div>
         <button

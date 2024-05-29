@@ -210,9 +210,8 @@ const UserDashboard = ({ props }) => {
       const formattedBalance = Number(
         ethers.utils.formatUnits(balance, decimals)
       );
-      const tx = await whitelistContract.removeAddressFromWhitelist({
-        gasPrice: gasPrice,
-      });
+      const tx = await whitelistContract.removeAddressFromWhitelist();
+      // ({ gasPrice: gasPrice,})
       await tx.wait();
       whitelistContract.once(
         role === "loueur"
@@ -304,9 +303,11 @@ const UserDashboard = ({ props }) => {
     // Mettre à jour le lieu de RDV dans le contrat
     setSmallLoader(true);
     try {
-      const tx = await contract.setGPS(newRDV[0], newRDV[1], {
-        gasPrice: gasPrice,
-      });
+      const tx = await contract.setGPS(
+        newRDV[0],
+        newRDV[1]
+        // {gasPrice: gasPrice,}
+      );
       await tx.wait();
       contract.once(
         "GPSupdated",
