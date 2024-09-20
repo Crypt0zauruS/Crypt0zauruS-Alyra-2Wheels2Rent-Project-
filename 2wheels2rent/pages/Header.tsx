@@ -105,9 +105,7 @@ export default function Header() {
                             {address.slice(0, 6) + "..." + address.slice(-4)}
                           </span>{" "}
                           - balance:{" "}
-                          <span style={{ color: "orange" }}>
-                            {pognon} MATIC
-                          </span>
+                          <span style={{ color: "orange" }}>{pognon} POL</span>
                         </h2>
                       )}
                     </li>
@@ -140,7 +138,7 @@ export default function Header() {
                         <h2 onClick={closeNav}>
                           compte:{" "}
                           {address.slice(0, 6) + "..." + address.slice(-4)} -
-                          balance: {pognon} MATIC
+                          balance: {pognon} POL
                         </h2>
                       </Link>
                     )}

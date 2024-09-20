@@ -14,6 +14,12 @@ Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de 
 
 ## Mises à jour
 
+### 2024-09-05
+
+Le Token MATIC a changé de nom pour devenir le token POL. Vu qu'il ne s'agit que d'un changement de nom et pas de son adresse sur Polygon Amoy, je n'ai pas redéployé les contrats, et par conséquent pas modifié les tests. C'est donc toujours le nom "MATIC" qui est utilisé dans les tests unitaires en aaccord avec la syntaxe utilisée dans les contrats.
+
+### fin de l'update
+
 ### 1.3.0
 
 #### 2023-05-21
@@ -46,7 +52,7 @@ Bienvenue sur le dépôt GitHub de 2Wheels2Rent, une application de location de 
 - Ajout d'un délai de 2 jours après la fin d'une location pour se désinscrire de la plateforme
 - Ajout d'une fonction qui envoie la caution dans le vault en cas d'une désinscription pendant un litige
 - Ajout de la fonctionnalité dans le DEX qui permet de récupérer des W2R de test pour utiliser l'application sur Amoy
-- Affichage des cours du Matic et du W2R dans le header, en USD et en EUR
+- Affichage des cours du POL et du W2R dans le header, en USD et en EUR
 - Optimisation du code
 - Mise à jour des tests unitaires
 
@@ -79,7 +85,7 @@ Vous pouvez accéder à l'application déployée en suivant ce lien : [2Wheels2R
 1. Pour déployer les contrats sur Ganache, il suffit de lancer la commande
    `truffle migrate --network development` dans le dossier truffle.
 
-2. Pour déployer les contrats sur Amoy, il faut d'abord renseigner votre clé privée et votre URL de votre node dédié à Polygon Amoy, dans un fichier .env à la racine du dossier truffle. Ensuite, assurez-vous de posséder des faucet de MATIC sur votre compte.
+2. Pour déployer les contrats sur Amoy, il faut d'abord renseigner votre clé privée et votre URL de votre node dédié à Polygon Amoy, dans un fichier .env à la racine du dossier truffle. Ensuite, assurez-vous de posséder des faucet de POL sur votre compte.
    Enfin, il suffit de lancer la commande
 
    `truffle migrate --network amoy`
@@ -291,7 +297,7 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 6. Ne pas autoriser la confirmation du retour du vélo si non déclaré comme retourné
 7. Ne pas autoriser la confirmation du retour du vélo si déjà retourné
 
-### Partie 4 : Gestion, le token MATIC-W2R LP
+### Partie 4 : Gestion, le token POL-W2R LP
 
 ##### **Test de gestion des contrats BikeShare et BikeRent**
 
@@ -310,7 +316,7 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
    - Les non-whitelistRenter ne doivent pas pouvoir détruire le contrat.
    - Les fonds doivent être transférés au propriétaire.
 
-##### **Test du contrat du MATIC-W2R LP Token**
+##### **Test du contrat du POL-W2R LP Token**
 
 1. Vérifier que le nom et le symbole sont corrects
 2. Permettre au owner d'ajouter un minter et un burner
@@ -330,15 +336,15 @@ Cette découpe des tests permet leur bon déroulement sans surcharger ganache et
 3. Ne pas autoriser les non-owner à mettre à jour le taux de swap
 4. Autoriser uniquement le propriétaire à ajouter de la liquidité en premier
 5. Ne pas échanger plus de tokens W2R que l'utilisateur n'en possède
-6. Ne pas échanger plus de Matic que l'utilisateur n'en possède
+6. Ne pas échanger plus de POL que l'utilisateur n'en possède
 7. Ne pas échanger plus de tokens W2R que 5% de la balance du DEX
 8. Échec de l'ajout de liquidité lorsque le montant de W2R est inférieur ou égal à 0
-9. Échec lorsque le montant de MATIC est inférieur ou égal à 0
+9. Échec lorsque le montant de POL est inférieur ou égal à 0
 10. Échec lorsque l'allowance de W2R est insuffisante
-11. Échec lorsque le ratio MATIC-W2R n'est pas dans la limite autorisée
+11. Échec lorsque le ratio POL-W2R n'est pas dans la limite autorisée
 12. Autoriser l'utilisateur à ajouter de la liquidité
-13. Échanger des tokens W2R contre du Matic
-14. Échanger du Matic contre des tokens W2R
+13. Échanger des tokens W2R contre du POL
+14. Échanger du POL contre des tokens W2R
 15. Permettre à l'utilisateur de retirer de la liquidité
 16. Ne pas permettre à l'utilisateur de retirer plus de tokens LP qu'il n'en possède
 

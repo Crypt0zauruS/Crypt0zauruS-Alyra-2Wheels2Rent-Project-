@@ -42,7 +42,7 @@ const MaticPrice = () => {
 
   return dataAvailable ? (
     <div onClick={toggleCurrency} className="fs-6 prices">
-      Matic:{" "}
+      POL:{" "}
       <span style={{ color: "orange" }}>
         {displayUSD ? `${priceUSD} $` : `${priceEUR} €`}
       </span>{" "}

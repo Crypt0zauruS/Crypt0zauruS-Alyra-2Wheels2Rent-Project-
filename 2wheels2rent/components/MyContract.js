@@ -393,7 +393,7 @@ const MyContract = ({
           <br />
           {activated && (
             <>
-              <span>W2R sur votre contrat (10 W2R = 1 MATIC): </span>
+              <span>W2R sur votre contrat (10 W2R = 1 POL): </span>
               <span style={{ color: "red" }}>{w2rBalance.toFixed(2)}</span>
               <br />
               Vous avez autorisé ce contrat à y déposer jusqu&apos;à{" "}

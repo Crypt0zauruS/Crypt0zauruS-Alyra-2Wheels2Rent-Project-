@@ -370,7 +370,7 @@ export default function Home() {
     if (address && network) {
       if (network.chainId !== 1337 && network.chainId !== 80002) {
         alert(
-          "Veuillez vous connecter au réseau de test Matic Amoy ou au réseau de développement local !"
+          "Veuillez vous connecter au réseau de test Polygon Amoy ou au réseau de développement local !"
         );
         // disconnect();
         Router.reload();

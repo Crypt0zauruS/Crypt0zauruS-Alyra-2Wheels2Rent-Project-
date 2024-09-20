@@ -148,21 +148,13 @@ const Dex = () => {
       dexContract.once(
         "SwapW2RForMatic",
         (user, w2rAmount, maticAmount, date) => {
-          console.log(
-            "user",
-            user,
-            "W2R",
-            w2rAmount,
-            "MATIC",
-            maticAmount,
-            date
-          );
+          console.log("user", user, "W2R", w2rAmount, "POL", maticAmount, date);
           showToast(
             `Swap effectué avec succès: ${Number(
               ethers.utils.formatUnits(w2rAmount, 18)
             ).toFixed(2)} W2R pour ${Number(
               ethers.utils.formatEther(maticAmount)
-            ).toFixed(2)} MATIC`
+            ).toFixed(2)} POL`
           );
         }
       );
@@ -196,19 +188,11 @@ const Dex = () => {
       dexContract.once(
         "SwapMaticForW2R",
         (user, maticAmount, w2rAmount, date) => {
-          console.log(
-            "user",
-            user,
-            "MATIC",
-            maticAmount,
-            "W2R",
-            w2rAmount,
-            date
-          );
+          console.log("user", user, "POL", maticAmount, "W2R", w2rAmount, date);
           showToast(
             `Swap effectué avec succès: ${Number(
               ethers.utils.formatEther(maticAmount)
-            ).toFixed(2)} MATIC pour ${Number(
+            ).toFixed(2)} POL pour ${Number(
               ethers.utils.formatUnits(w2rAmount, 18)
             ).toFixed(2)} W2R`
           );
@@ -242,7 +226,7 @@ const Dex = () => {
       const upperBound = targetRatio * 1.03;
       if (ratio < lowerBound || ratio > upperBound) {
         showToast(
-          `Veuillez fournir des montants qui respectent un ratio d'environ ${swapRate} W2R pour 1 MATIC.`,
+          `Veuillez fournir des montants qui respectent un ratio d'environ ${swapRate} W2R pour 1 POL.`,
           true
         );
         return;
@@ -270,7 +254,7 @@ const Dex = () => {
           console.log(
             "user",
             user,
-            "MATIC",
+            "POL",
             maticAmount,
             "W2R",
             w2rAmount,
@@ -280,9 +264,9 @@ const Dex = () => {
           showToast(
             `Ajout de liquidité effectué avec succès: ${Number(
               ethers.utils.formatEther(maticAmount)
-            ).toFixed(2)} MATIC et ${Number(
+            ).toFixed(2)} POL et ${Number(
               ethers.utils.formatUnits(w2rAmount, 18)
-            ).toFixed(2)} W2R, Matic-W2R LP Tokens dans votre wallet.`
+            ).toFixed(2)} W2R, POL-W2R LP Tokens dans votre wallet.`
           );
         }
       );
@@ -341,7 +325,7 @@ const Dex = () => {
             user,
             "LP",
             lpAmount,
-            "MATIC",
+            "POL",
             maticAmount,
             "W2R",
             w2rAmount
@@ -349,7 +333,7 @@ const Dex = () => {
           showToast(
             `Retrait de liquidité effectué avec succès en échange de ${Number(
               ethers.utils.formatUnits(lpAmount, 18)
-            ).toFixed(2)} Matic-W2R LP Tokens`
+            ).toFixed(2)} POL-W2R LP Tokens`
           );
         }
       );
@@ -398,7 +382,7 @@ const Dex = () => {
         showToast(
           `Staking effectué avec succès: ${Number(
             ethers.utils.formatUnits(lpAmount, 18)
-          ).toFixed(2)} Matic-W2R LP Tokens stakés`
+          ).toFixed(2)} POL-W2R LP Tokens stakés`
         );
       });
       setLoading(false);
@@ -461,7 +445,7 @@ const Dex = () => {
         showToast(
           `Retrait du farming effectué avec succès: ${Number(
             ethers.utils.formatUnits(lpAmount, 18)
-          ).toFixed(2)} Matic-W2R LP Tokens retirés avec récompenses en W2R`
+          ).toFixed(2)} POL-W2R LP Tokens retirés avec récompenses en W2R`
         );
       });
       setLoading(false);
@@ -781,7 +765,7 @@ const Dex = () => {
     <input
       className="form-control m-2 text-center"
       type="number"
-      placeholder="MATIC montant"
+      placeholder="POL montant"
       min="0"
       value={swapMaticAmount}
       onChange={(e) => {
@@ -926,7 +910,7 @@ const Dex = () => {
                       Bien que le Dex soit pleinement fonctionnel testé en
                       réseau local, il n&apos;est pas encore possible de
                       l&apos;utiliser sur Amoy, ne pouvant pas apporter la
-                      liquidité nécessaire en Matic de test (nous n&apos;avons
+                      liquidité nécessaire en POL de test (nous n&apos;avons
                       droit qu&apos;à une fraction par jour😅).
                       <br />
                       <br />
@@ -947,7 +931,7 @@ const Dex = () => {
                         Réclamer mes W2R de test
                       </button>
                       <br />
-                      N&apos;oubliez pas de récupérer vos faucets de test Matic
+                      N&apos;oubliez pas de récupérer vos faucets de test POL
                       pour les frais de gas sur
                       <a
                         href="https://faucet.polygon.technology/"
@@ -987,7 +971,7 @@ const Dex = () => {
                 {!loading ? (
                   <>
                     <h2 className="text-center m-4 fs-6">
-                      Pour toutes opérations concernant vos W2R et vos Matic-W2R
+                      Pour toutes opérations concernant vos W2R et vos POL-W2R
                       LP Tokens, votre wallet vous demandera d&apos;abord
                       d&apos;approuver le montant que vous avez indiqué pour
                       votre transaction, avant d&apos;y procéder. Ceci vous
@@ -1026,8 +1010,8 @@ const Dex = () => {
               <div className="col-12 col-md-6 swap-section">
                 <h2>Échanger</h2>
                 <h3 className="text-center m-2">
-                  Vous pouvez acquérir des W2R en les échangeant contre vos
-                  MATIC, et inversement !
+                  Vous pouvez acquérir des W2R en les échangeant contre vos POL,
+                  et inversement !
                 </h3>
                 <br />
                 <div className="swap-inputs d-flex input-group">
@@ -1051,7 +1035,7 @@ const Dex = () => {
                     onClick={swapMaticForW2R}
                     disabled={loading}
                   >
-                    Swap MATIC pour W2R
+                    Swap POL pour W2R
                   </button>
                 ) : (
                   <button
@@ -1060,7 +1044,7 @@ const Dex = () => {
                     onClick={swapW2RForMatic}
                     disabled={loading}
                   >
-                    Swap W2R pour MATIC
+                    Swap W2R pour POL
                   </button>
                 )}
                 <button
@@ -1086,7 +1070,7 @@ const Dex = () => {
                 <h2 className="text-center fs-3 m-2">Participer</h2>
                 <input
                   className="form-control m-2 text-center"
-                  placeholder="Entrer le montant de MATIC"
+                  placeholder="Entrer le montant de POL"
                   type="number"
                   min="0"
                   value={maticAmount}
@@ -1114,7 +1098,7 @@ const Dex = () => {
                   }}
                   onPaste={(e) => e.preventDefault()}
                 />
-                <h2 className="text-center">⬆️ MATIC - W2R ⬇️</h2>
+                <h2 className="text-center">⬆️ POL - W2R ⬇️</h2>
                 <input
                   className="form-control m-2 text-center"
                   placeholder="Entrer le montant de W2R"
@@ -1155,9 +1139,9 @@ const Dex = () => {
                 </button>
                 <h3 className="text-center m-2">
                   En fournissant de la liquidité à hauteur de {swapRate} W2R
-                  pour 1 Matic, vous participez au fonctionnement du DEX et
-                  recevez en échange des Matic-W2R LP Tokens. Ne les perdez pas
-                  ! Vous devrez les rendre pour récupérer votre liquidité. Mais
+                  pour 1 POL, vous participez au fonctionnement du DEX et
+                  recevez en échange des POL-W2R LP Tokens. Ne les perdez pas !
+                  Vous devrez les rendre pour récupérer votre liquidité. Mais
                   surtout, vous pouvez les mettre en Farming pour gagner des W2R
                   !{" "}
                 </h3>
@@ -1173,7 +1157,7 @@ const Dex = () => {
                     className="form-control m-2 text-center"
                     type="number"
                     min="0"
-                    placeholder="Montant de Matic-W2R LP Tokens à rendre"
+                    placeholder="Montant de POL-W2R LP Tokens à rendre"
                     value={lpTokenAmountToRemove}
                     onChange={(e) => {
                       if (Number(e.target.value) > userBalances?.lpToken) {
@@ -1223,10 +1207,10 @@ const Dex = () => {
                 </button>
                 <h3 className="text-center m-2">
                   Cette opération permettra de vous retourner sur votre wallet
-                  les MATIC et W2R que vous avez fournis au DEX. Vous rendez
-                  pour cela tout ou partie des Matic-W2R LP Tokens détenus sur
-                  votre wallet. Si vos Matic-W2R LP Tokens sont en farming, il
-                  faudra d&apos;abord les récupérer.
+                  les POL et W2R que vous avez fournis au DEX. Vous rendez pour
+                  cela tout ou partie des POL-W2R LP Tokens détenus sur votre
+                  wallet. Si vos POL-W2R LP Tokens sont en farming, il faudra
+                  d&apos;abord les récupérer.
                 </h3>
               </div>
               <div className="col-12 col-md-6 farm-section">
@@ -1236,7 +1220,7 @@ const Dex = () => {
                     className="form-control text-center"
                     type="number"
                     min="0"
-                    placeholder="Montant de Matic-W2R LP Tokens"
+                    placeholder="Montant de POL-W2R LP Tokens"
                     value={lpTokenAmountToStake}
                     onChange={(e) => {
                       if (Number(e.target.value) > userBalances?.lpToken) {
@@ -1281,10 +1265,10 @@ const Dex = () => {
                   disabled={loading}
                   type="button"
                 >
-                  Staker les Matic-W2R LP Tokens
+                  Staker les POL-W2R LP Tokens
                 </button>
                 <h3 className="text-center m-2">
-                  En mettant vos Matic-W2R LP Tokens en farming, vous montrez
+                  En mettant vos POL-W2R LP Tokens en farming, vous montrez
                   votre volonté de confier de la liquidité au DEX dans le temps.
                   Vous serez récompensé en W2R !<br />
                   <span style={{ color: "blue" }}>
@@ -1301,7 +1285,7 @@ const Dex = () => {
                 <hr />
                 <div className="balance d-flex align-items-center mb-2">
                   <h2 className="fs-5">
-                    MATIC: {userBalances?.matic.toFixed(2)}
+                    POL: {userBalances?.matic.toFixed(2)}
                   </h2>
                 </div>
                 <div className="balance d-flex align-items-center mb-2">
@@ -1309,12 +1293,12 @@ const Dex = () => {
                 </div>
                 <div className="balance d-flex align-items-center mb-2">
                   <h2 className="fs-5">
-                    Matic-W2R LP Tokens: {userBalances?.lpToken.toFixed(2)}
+                    POL-W2R LP Tokens: {userBalances?.lpToken.toFixed(2)}
                   </h2>
                 </div>
                 <div className="balance d-flex align-items-center mb-2">
                   <h2 className="fs-5">
-                    Votre farming de Matic-W2R LP Tokens: {farmedLP?.toFixed(2)}
+                    Votre farming de POL-W2R LP Tokens: {farmedLP?.toFixed(2)}
                   </h2>
                 </div>
               </div>
@@ -1323,7 +1307,7 @@ const Dex = () => {
                 <hr />
                 <div className="balance d-flex align-items-center mb-2">
                   <h2 className="fs-5">
-                    MATIC: {contractBalances?.matic.toFixed(2)}
+                    POL: {contractBalances?.matic.toFixed(2)}
                   </h2>
                 </div>
                 <div className="balance d-flex align-items-center mb-2">
@@ -1334,7 +1318,7 @@ const Dex = () => {
                 <div className="balance d-flex align-items-center mb-2">
                   <h2 className="fs-5">
                     {" "}
-                    Matic-W2R LP Tokens en farming:{" "}
+                    POL-W2R LP Tokens en farming:{" "}
                     {contractBalances?.lpToken.toFixed(2)}
                   </h2>
                 </div>
@@ -1393,7 +1377,7 @@ const Dex = () => {
                     onClick={() => setQrLP(!QrLP)}
                     style={{ cursor: "pointer" }}
                   >
-                    Contrat du Matic-W2R LP Token: {pairTokenAddress}{" "}
+                    Contrat du POL-W2R LP Token: {pairTokenAddress}{" "}
                     <span
                       onClick={() => handleCopy(pairTokenAddress)}
                       style={{ cursor: "pointer" }}
@@ -1446,7 +1430,7 @@ const Dex = () => {
             <hr />
             <h1 className="text-center fs-5">
               Lorsque le projet sera déployé sur le Mainnet, vous pourrez
-              échanger vos MATIC contre des W2R et vice-versa ! Et gagner des
+              échanger vos POL contre des W2R et vice-versa ! Et gagner des
               récompenses en apportant de la liquidité !
             </h1>
           </>

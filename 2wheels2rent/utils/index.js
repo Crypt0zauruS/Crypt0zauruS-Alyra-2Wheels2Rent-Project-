@@ -60,10 +60,10 @@ export const addPolygonToMetamask = async () => {
         params: [
           {
             chainId: "0x13882",
-            chainName: "Matic Amoy",
+            chainName: "Polygon Amoy",
             nativeCurrency: {
-              name: "MATIC",
-              symbol: "MATIC",
+              name: "POL",
+              symbol: "POL",
               decimals: 18,
             },
             rpcUrls: ["https://polygon-amoy.drpc.org/"],
